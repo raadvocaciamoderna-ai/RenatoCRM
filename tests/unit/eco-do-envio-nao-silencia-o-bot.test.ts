@@ -191,12 +191,13 @@ const envelope = (p: WahaPayload): WahaEnvelope => ({
 });
 
 /** O eco do próprio envio, no formato `@lid_` do NOWEB. */
-const eco = (body: string): WahaPayload => ({
+const eco = (body: string, over: Partial<WahaPayload> = {}): WahaPayload => ({
   id: "true_10200698331209@lid_3EB0C767D097E9ECA6B1",
   from: "10200698331209@lid",
   fromMe: true,
   body,
   timestamp: 1_760_000_000,
+  ...over,
 });
 
 /** Uma linha de envio do CRM ainda EM VOO: gravada, sem id do canal. */
@@ -221,6 +222,24 @@ describe("eco do próprio envio — a IA não se cala por ter falado", () => {
     expect(
       conversa.bot_silenced_until,
       "a IA se calou por três horas por ter falado — e a tela mostra 'Automático pausado', um estado legítimo que ninguém investiga",
+    ).toBeNull();
+  });
+
+  it("envio da IA recém-confirmado pelo canal + eco com o MESMO texto: o bot NÃO é silenciado", async () => {
+    const { admin, conversa } = banco([
+      emVoo({ status: "sent", external_id: "3EB0727F858903C543BEC6" }),
+    ]);
+
+    await dispatchWahaEvent(
+      admin as never,
+      SESSION as never,
+      envelope(eco(TEXTO, { id: "true_208924707971109@lid_3EB0727F858903C543BEC6" })),
+      "req-1b",
+    );
+
+    expect(
+      conversa.bot_silenced_until,
+      "o eco chegou depois do ack do canal e calou a IA logo antes da confirmação do cliente",
     ).toBeNull();
   });
 
@@ -370,4 +389,3 @@ describe("eco do envio da automação — reconhecido como nosso (#652)", () => 
     expect(messages.length).toBe(2);
   });
 });
-

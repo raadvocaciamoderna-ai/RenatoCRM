@@ -97,10 +97,10 @@ async function ehEcoDeEnvioNosso(
     // integração deixa de ser reconhecida como envio NOSSO, o eco do próprio
     // envio vira "resposta pelo celular" e cala a IA por três horas.
     .in("sent_via", ["ai", "user", "automation", "system"])
-    // Sem `external_id` = ainda não confirmada pelo canal = ainda em voo. É esta
-    // a janela exata em que o eco é indistinguível de digitação humana.
-    .is("external_id", null)
-    .in("status", ["queued", "sending"])
+    // A janela crítica começa antes do canal confirmar (`queued`/`sending`) e
+    // continua poucos segundos depois (`sent`): alguns provedores entregam o eco
+    // fromMe só depois de já termos carimbado `external_id`.
+    .in("status", ["queued", "sending", "sent"])
     .gte("created_at", desde)
     .limit(20);
 
