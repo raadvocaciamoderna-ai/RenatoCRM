@@ -644,20 +644,15 @@ export function AgendaClient({
           E a página também não rolava: o `SheetContent` é `position: fixed`, e
           transbordo de elemento fixo não estende a área rolável do documento.
           
-          Abaixo de `lg` o próprio Sheet rola (ali o painel empilha e a lista é
-          uma seção, não uma coluna). De `lg` para cima o Sheet segura a altura e
-          a LISTA rola, com calendário e contexto parados.
-          
-          ⚠️ `lg:overflow-hidden` e não `overflow-y-auto` em todo breakpoint: em
-          `lg` o Sheet tem 1040px com `p-6` → 992px de caixa contra ~980px de
-          painel. Uma barra vertical come essa folga, e como o CSS computa
-          `overflow-x: visible` como `auto` quando `overflow-y` não é `visible`,
-          nasceria barra HORIZONTAL exatamente no breakpoint que o conserto de
-          largura acabou de reparar.
+          O Sheet inteiro rola em qualquer breakpoint. Medido numa janela de
+          1365×768: o formulário de contexto já consome quase toda a altura, e o
+          antigo `lg:overflow-hidden` deixava o botão de confirmar abaixo da
+          dobra sem caminho para chegar nele. `overflow-x-hidden` mantém a barra
+          horizontal fora sem bloquear a rolagem vertical.
         */}
         <SheetContent
           side="right"
-          className="flex w-full flex-col overflow-y-auto sm:max-w-3xl lg:max-w-[1040px] lg:overflow-hidden"
+          className="flex h-[100svh] max-h-[100svh] w-full flex-col overflow-x-hidden overflow-y-scroll overscroll-contain sm:max-w-3xl lg:max-w-[1040px]"
         >
           <SheetHeader>
             <SheetTitle>
@@ -777,9 +772,8 @@ export function AgendaClient({
             ) : null}
           </div>
           {tipo && (
-            <div className="mt-4 lg:min-h-0 lg:flex-1">
+            <div className="mt-4 shrink-0 pb-8">
               <PainelDeMarcacao
-                className="lg:h-full"
                 // O mês que abre é o da organização, como a grade ao lado.
                 ancora={ancoraLocalDoDia(hojeNaOrganizacao)}
                 agora={new Date()}
