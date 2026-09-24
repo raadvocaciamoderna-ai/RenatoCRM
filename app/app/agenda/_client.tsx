@@ -190,6 +190,8 @@ export function AgendaClient({
   // vazia) = a pessoa editou, e o tipo novo não pode devolver o que ela apagou.
   const [enderecoEditado, setEnderecoEditado] = React.useState<string | null>(null);
   const [observacao, setObservacao] = React.useState("");
+  const rolagemNovoAgendamentoRef = React.useRef<HTMLDivElement>(null);
+  const toqueYDaRolagemRef = React.useRef<number | null>(null);
   const marcar = useMarcarAgendamento();
   const remarcar = useRemarcarAgendamento();
   const cancelar = useCancelarAgendamento();
@@ -655,8 +657,27 @@ export function AgendaClient({
           className="h-[100svh] max-h-[100svh] w-full overflow-hidden p-0 sm:max-w-3xl lg:max-w-[1040px]"
         >
           <div
+            ref={rolagemNovoAgendamentoRef}
             className="h-full overflow-y-auto overflow-x-hidden overscroll-contain p-6 pb-12"
             data-testid="rolagem-novo-agendamento"
+            onWheelCapture={(e) => {
+              const alvo = rolagemNovoAgendamentoRef.current;
+              if (!alvo || alvo.scrollHeight <= alvo.clientHeight) return;
+              alvo.scrollTop += e.deltaY;
+              e.stopPropagation();
+            }}
+            onTouchStartCapture={(e) => {
+              toqueYDaRolagemRef.current = e.touches[0]?.clientY ?? null;
+            }}
+            onTouchMoveCapture={(e) => {
+              const alvo = rolagemNovoAgendamentoRef.current;
+              const yAnterior = toqueYDaRolagemRef.current;
+              const yAtual = e.touches[0]?.clientY ?? null;
+              if (!alvo || yAnterior === null || yAtual === null || alvo.scrollHeight <= alvo.clientHeight) return;
+              alvo.scrollTop += yAnterior - yAtual;
+              toqueYDaRolagemRef.current = yAtual;
+              e.stopPropagation();
+            }}
           >
             <SheetHeader>
               <SheetTitle>
