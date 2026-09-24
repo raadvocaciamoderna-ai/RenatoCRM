@@ -652,14 +652,18 @@ export function AgendaClient({
         */}
         <SheetContent
           side="right"
-          className="flex h-[100svh] max-h-[100svh] w-full flex-col overflow-x-hidden overflow-y-scroll overscroll-contain sm:max-w-3xl lg:max-w-[1040px]"
+          className="h-[100svh] max-h-[100svh] w-full overflow-hidden p-0 sm:max-w-3xl lg:max-w-[1040px]"
         >
-          <SheetHeader>
-            <SheetTitle>
-              {remarcandoId ? t("Remarcar agendamento") : t("Novo agendamento")}
-            </SheetTitle>
-          </SheetHeader>
-          <div className="grid shrink-0 gap-3 rounded-lg border p-3 lg:grid-cols-2">
+          <div
+            className="h-full overflow-y-auto overflow-x-hidden overscroll-contain p-6 pb-12"
+            data-testid="rolagem-novo-agendamento"
+          >
+            <SheetHeader>
+              <SheetTitle>
+                {remarcandoId ? t("Remarcar agendamento") : t("Novo agendamento")}
+              </SheetTitle>
+            </SheetHeader>
+            <div className="grid shrink-0 gap-3 rounded-lg border p-3 lg:grid-cols-2">
             {!remarcandoId ? (
               <div className="lg:col-span-2">
               <VinculoDaMarcacao
@@ -770,10 +774,10 @@ export function AgendaClient({
                 </div>
               </>
             ) : null}
-          </div>
-          {tipo && (
-            <div className="mt-4 shrink-0 pb-8">
-              <PainelDeMarcacao
+            </div>
+            {tipo && (
+              <div className="mt-4 shrink-0 pb-8">
+                <PainelDeMarcacao
                 layout="empilhado"
                 // O mês que abre é o da organização, como a grade ao lado.
                 ancora={ancoraLocalDoDia(hojeNaOrganizacao)}
@@ -900,9 +904,10 @@ export function AgendaClient({
                   setMarcando(false);
                   setRemarcandoId(null);
                 }}
-              />
-            </div>
-          )}
+                />
+              </div>
+            )}
+          </div>
         </SheetContent>
       </Sheet>
 
