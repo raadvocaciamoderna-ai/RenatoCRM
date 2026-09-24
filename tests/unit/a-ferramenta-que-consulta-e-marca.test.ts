@@ -36,7 +36,12 @@ vi.mock("@/app/api/v1/agenda/agendamentos/_handler", () => ({
 
 vi.mock("@/lib/agenda/consulta", async (original) => {
   const real = await original<typeof AgendaConsulta>();
-  return { ...real, horariosLivresDaOrg: vi.fn(), listaAgendamentos: vi.fn(), idDoTipoPorSlug: vi.fn() };
+  return {
+    ...real,
+    horariosLivresDaOrg: vi.fn(),
+    listaAgendamentos: vi.fn(),
+    idDoTipoPorSlug: vi.fn(),
+  };
 });
 
 const { horariosLivresDaOrg, idDoTipoPorSlug } = await import("@/lib/agenda/consulta");
@@ -57,6 +62,7 @@ const ctx: McpContext = {
 };
 
 const CONTATO = "11111111-1111-4111-8111-111111111111";
+const UUID_QUE_NAO_E_ATENDENTE = "22222222-2222-4222-8222-222222222222";
 
 // ⚠️ O fuso da REGRA é `America/Sao_Paulo`, e os instantes estão DESLOCADOS do rótulo
 // de propósito: 17:00Z é o rótulo "14:00" local, 18:00Z é "15:00".
@@ -112,6 +118,41 @@ describe("crm_find_and_book_appointment", () => {
     // E o retorno diz QUAL horário esta chamada usou — o modelo não precisa deduzir.
     expect(r.inicio).toBe("2026-09-01T17:00:00.000Z");
     expect(String(r.quando)).toMatch(HORA_14);
+  });
+
+  it("se o modelo mandar o contato como responsável, cai no dono padrão do tipo", async () => {
+    const supabase = {
+      from: vi.fn(() => ({
+        select: () => ({
+          eq: () => ({
+            eq: () => ({
+              maybeSingle: async () => ({ data: null, error: null }),
+            }),
+          }),
+        }),
+      })),
+    } as unknown as SupabaseClient;
+    const ctxComBanco = { ...ctx, supabase };
+
+    const r = (await crmFindAndBookAppointment.handler(
+      {
+        event_type_slug: "consulta",
+        dia: "2026-09-01",
+        horario: "14:00",
+        contact_id: CONTATO,
+        owner_user_id: UUID_QUE_NAO_E_ATENDENTE,
+      },
+      ctxComBanco,
+    )) as Record<string, unknown>;
+
+    expect(r.marcado).toBe(true);
+    expect(horariosLivresDaOrg).toHaveBeenCalledWith(
+      supabase,
+      "org-1",
+      expect.objectContaining({ ownerUserId: null }),
+    );
+    const [, , corpo] = vi.mocked(handlers.marcarAgendamentoHandler).mock.calls[0]!;
+    expect(corpo).not.toHaveProperty("owner_user_id", UUID_QUE_NAO_E_ATENDENTE);
   });
 
   it("horário pedido fora da lista: NADA é marcado e a resposta traz os horários do dia", async () => {
@@ -291,7 +332,6 @@ describe("crm_find_and_book_appointment", () => {
     expect(r.marcado).toBe(false);
     expect(r.agenda_externa_nunca_lida).toBe(true);
   });
-
 });
 
 describe("temFerramentaDeMarcacao (#831)", () => {
@@ -325,10 +365,7 @@ describe("temFerramentaDeMarcacao (#831)", () => {
   it("o PONTO DE USO: quem só remarca recebe o bloco de CONSULTA, não o de marcar", async () => {
     const { blocoResidenteDaAgenda } = await import("@/lib/agent-engine/agent/inbound-turn");
 
-    const soRemarca = blocoResidenteDaAgenda([
-      "crm_reschedule_appointment",
-      "crm_find_free_slots",
-    ]);
+    const soRemarca = blocoResidenteDaAgenda(["crm_reschedule_appointment", "crm_find_free_slots"]);
     expect(soRemarca).not.toBeNull();
     // O bloco de consulta é o que NÃO manda marcar — é o que lhe cabe.
     expect(soRemarca!).toContain("quem confirma");
@@ -356,9 +393,8 @@ describe("temFerramentaDeMarcacao (#831)", () => {
     // uma é alcançável pela tela (uma caixa por capacidade no ToolPicker). Um texto
     // novo escrito à mão com um nome fixo fica vermelho aqui na combinação que não
     // o tem.
-    const { blocoResidenteDaAgenda, temFerramentaDeMarcacao } = await import(
-      "@/lib/agent-engine/agent/inbound-turn"
-    );
+    const { blocoResidenteDaAgenda, temFerramentaDeMarcacao } =
+      await import("@/lib/agent-engine/agent/inbound-turn");
     const AGENDA = [
       "crm_find_free_slots",
       "crm_book_appointment",

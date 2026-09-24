@@ -157,7 +157,9 @@ const horariosLivresShape = {
     .min(1)
     .max(MAXIMO_DE_DIAS)
     .optional()
-    .describe(`quantos dias olhar a partir de agora (padrão ${DIAS_PADRAO}). Use ESTE campo se você não sabe a data de hoje.`),
+    .describe(
+      `quantos dias olhar a partir de agora (padrão ${DIAS_PADRAO}). Use ESTE campo se você não sabe a data de hoje.`,
+    ),
   /**
    * A data civil é deliberadamente diferente de um ISO com offset. O modelo sabe
    * que o cliente pediu "dia 13", mas não sabe onde começa esse dia no fuso da
@@ -168,7 +170,9 @@ const horariosLivresShape = {
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "dia deve estar em YYYY-MM-DD")
     .optional()
-    .describe("dia civil pedido pelo cliente, em YYYY-MM-DD. Use para uma data específica; o servidor aplica o fuso da agenda."),
+    .describe(
+      "dia civil pedido pelo cliente, em YYYY-MM-DD. Use para uma data específica; o servidor aplica o fuso da agenda.",
+    ),
   owner_user_id: z.string().uuid().optional(),
   limite: z
     .number()
@@ -207,6 +211,51 @@ function horaLocalDoRotulo(rotulo: string): string {
 function normalizarHorario(horario: string): string {
   const [h = "", m = ""] = horario.split(":");
   return `${h.padStart(2, "0")}:${m.padStart(2, "0")}`;
+}
+
+/**
+ * O modelo às vezes confunde "quem vai ser atendido" com "quem atende".
+ *
+ * Medido ao vivo no RenatoCRM: ele passou o `contact_id` do WhatsApp em
+ * `owner_user_id`. Como o UUID era bem-formado, a borda deixava passar; a agenda
+ * consultava um "responsável" que não tem jornada, a ferramenta voltava sem marcar
+ * nada, e o modelo mandava ao cliente uma confirmação inventada. Para o agente,
+ * um responsável informado mas sem agenda publicada nesta organização deve cair no
+ * responsável padrão do tipo de atendimento.
+ */
+async function donoDaAgendaOuPadrao(
+  ctx: McpContext,
+  ownerUserId?: string,
+): Promise<string | undefined> {
+  if (ownerUserId === undefined) return undefined;
+  const { data, error } = await ctx.supabase
+    .from("attendant_availability")
+    .select("user_id")
+    .eq("organization_id", ctx.organizationId)
+    .eq("user_id", ownerUserId)
+    .maybeSingle();
+  if (error) return ownerUserId;
+  return data ? ownerUserId : undefined;
+}
+
+export function motivoDoVazioDaAgenda(resultado: unknown): string | null {
+  if (typeof resultado !== "object" || resultado === null) return null;
+  const r = resultado as {
+    marcado?: unknown;
+    remarcado?: unknown;
+    cancelado?: unknown;
+    confirmado?: unknown;
+    motivo?: unknown;
+  };
+  if (
+    r.marcado === false ||
+    r.remarcado === false ||
+    r.cancelado === false ||
+    r.confirmado === false
+  ) {
+    return typeof r.motivo === "string" ? r.motivo : "acao_nao_realizada";
+  }
+  return null;
 }
 
 /**
@@ -300,6 +349,7 @@ export const crmFindFreeSlots: McpToolDefinition<typeof horariosLivresShape> = {
   requiresScope: "mcp:read",
   handler: async (input, ctx) => {
     const agora = new Date();
+    const ownerUserId = await donoDaAgendaOuPadrao(ctx, input.owner_user_id);
     if (input.dia !== undefined && input.dias_a_frente !== undefined) {
       return {
         horarios: [],
@@ -326,7 +376,7 @@ export const crmFindFreeSlots: McpToolDefinition<typeof horariosLivresShape> = {
 
     const consulta = await horariosLivresDaOrg(ctx.supabase, ctx.organizationId, {
       eventTypeSlug: input.event_type_slug,
-      ownerUserId: input.owner_user_id ?? null,
+      ownerUserId: ownerUserId ?? null,
       de,
       ate,
       agora,
@@ -355,7 +405,6 @@ export const crmFindFreeSlots: McpToolDefinition<typeof horariosLivresShape> = {
     return payloadDeHorarios(consulta, slotsDoPeriodo, input.limite ?? HORARIOS_PADRAO);
   },
 };
-
 
 const listarShape = {
   // As duas descrições existem porque o modelo escolhia entre os dois campos no
@@ -442,7 +491,6 @@ export const crmListAppointments: McpToolDefinition<typeof listarShape> = {
   },
 };
 
-
 // ─────────────────────────────────────────────────────────────────────────────
 // AS ESCRITAS
 //
@@ -473,8 +521,10 @@ const ENSINO_POR_CODIGO: Record<string, string> = {
   agenda_ainda_nao_aconteceu:
     "esse compromisso ainda não começou, então não há desfecho a registrar. Se a pessoa avisou que " +
     "não vem, use `crm_cancel_appointment`; se ela quer outro dia, `crm_reschedule_appointment`.",
-  not_found: "não encontrei esse compromisso. Confirme com `crm_list_appointments` antes de tentar de novo.",
-  internal_error: "não consegui completar agora. Avise que alguém da equipe confirma, e não repita a tentativa.",
+  not_found:
+    "não encontrei esse compromisso. Confirme com `crm_list_appointments` antes de tentar de novo.",
+  internal_error:
+    "não consegui completar agora. Avise que alguém da equipe confirma, e não repita a tentativa.",
 };
 
 /** Captura o `ApiError` do handler e devolve recusa de NEGÓCIO, nunca exceção. */
@@ -498,7 +548,10 @@ async function semDerrubarOTurno<T>(
 
 const marcarShape = {
   event_type_slug: z.string().min(1).describe("o identificador legível do tipo de atendimento"),
-  starts_at: z.string().datetime({ offset: true }).describe("o instante exato do início, vindo de `crm_find_free_slots`"),
+  starts_at: z
+    .string()
+    .datetime({ offset: true })
+    .describe("o instante exato do início, vindo de `crm_find_free_slots`"),
   contact_id: z.string().uuid().describe("quem vai ser atendido"),
   owner_user_id: z.string().uuid().optional(),
   title: z.string().min(1).max(200).optional(),
@@ -537,8 +590,10 @@ export const crmBookAppointment: McpToolDefinition<typeof marcarShape> = {
   category: "write",
   requiresRole: "ai_operator",
   requiresScope: "mcp:write",
+  motivoDoVazio: motivoDoVazioDaAgenda,
   handler: async (input, ctx) =>
     semDerrubarOTurno("marcado", async () => {
+      const ownerUserId = await donoDaAgendaOuPadrao(ctx, input.owner_user_id);
       const tipo = await idDoTipoPorSlug(ctx.supabase, ctx.organizationId, input.event_type_slug);
       if (!tipo) {
         return {
@@ -549,12 +604,17 @@ export const crmBookAppointment: McpToolDefinition<typeof marcarShape> = {
       }
       const r = await marcarAgendamentoHandler(
         ctx.supabase,
-        { organization_id: ctx.organizationId, actor: ctx.actor, requestId: ctx.requestId, meetingBooking: ctx.meetingBooking },
+        {
+          organization_id: ctx.organizationId,
+          actor: ctx.actor,
+          requestId: ctx.requestId,
+          meetingBooking: ctx.meetingBooking,
+        },
         {
           event_type_id: tipo.id,
           starts_at: input.starts_at,
           contact_id: input.contact_id,
-          ...(input.owner_user_id ? { owner_user_id: input.owner_user_id } : {}),
+          ...(ownerUserId ? { owner_user_id: ownerUserId } : {}),
           ...(input.title ? { title: input.title } : {}),
           ...(input.notes ? { notes: input.notes } : {}),
           ...(input.description ? { description: input.description } : {}),
@@ -648,13 +708,13 @@ const consultarEMarcarShape = {
     .regex(/^\d{4}-\d{2}-\d{2}$/, "dia deve estar em YYYY-MM-DD")
     .describe(
       "o dia CIVIL que o cliente pediu, em YYYY-MM-DD. O servidor aplica o fuso da agenda: " +
-        "nunca some nem subtraia horas para \"corrigir\" o fuso.",
+        'nunca some nem subtraia horas para "corrigir" o fuso.',
     ),
   horario: z
     .string()
     .regex(/^\d{1,2}:\d{2}$/, "horario deve estar em HH:mm")
     .describe(
-      "a HORA LOCAL que o cliente pediu no mesmo dia do campo `dia`, em HH:mm (ex.: \"14:00\"). " +
+      'a HORA LOCAL que o cliente pediu no mesmo dia do campo `dia`, em HH:mm (ex.: "14:00"). ' +
         "É a hora que aparece em `quando` na consulta — a mesma do relógio de quem atende.",
     ),
   contact_id: z.string().uuid().describe("quem vai ser atendido"),
@@ -685,7 +745,7 @@ export const crmFindAndBookAppointment: McpToolDefinition<typeof consultarEMarca
   name: "crm_find_and_book_appointment",
   description:
     "Confere UM horário e, se estiver livre, MARCA na MESMA chamada. Use quando o cliente " +
-    "JÁ disse o dia E a hora (\"quinta às 14h\", \"amanhã de manhã às 9\") e esse par ainda não " +
+    'JÁ disse o dia E a hora ("quinta às 14h", "amanhã de manhã às 9") e esse par ainda não ' +
     "foi checado: aqui consulta e marcação são uma decisão só, e é o caminho preferido — " +
     "encerrar o turno com o horário apenas consultado deixa o cliente sem agendamento. " +
     "Não use quando o cliente ainda não escolheu hora (aí é `crm_find_free_slots`) nem para " +
@@ -702,13 +762,15 @@ export const crmFindAndBookAppointment: McpToolDefinition<typeof consultarEMarca
   category: "write",
   requiresRole: "ai_operator",
   requiresScope: "mcp:write",
+  motivoDoVazio: motivoDoVazioDaAgenda,
   handler: async (input, ctx) => {
     const agora = new Date();
     const { de, ate } = faixaAmplaDoDia(input.dia);
+    const ownerUserId = await donoDaAgendaOuPadrao(ctx, input.owner_user_id);
 
     const consulta = await horariosLivresDaOrg(ctx.supabase, ctx.organizationId, {
       eventTypeSlug: input.event_type_slug,
-      ownerUserId: input.owner_user_id ?? null,
+      ownerUserId: ownerUserId ?? null,
       de,
       ate,
       agora,
@@ -759,7 +821,7 @@ export const crmFindAndBookAppointment: McpToolDefinition<typeof consultarEMarca
       // agenda confirmou como livre.
       startsAt: achado.inicio.toISOString(),
       contactId: input.contact_id,
-      ...(input.owner_user_id !== undefined ? { ownerUserId: input.owner_user_id } : {}),
+      ...(ownerUserId !== undefined ? { ownerUserId } : {}),
       ...(input.title !== undefined ? { title: input.title } : {}),
       ...(input.notes !== undefined ? { notes: input.notes } : {}),
     });
@@ -829,7 +891,10 @@ export const crmFindAndBookAppointment: McpToolDefinition<typeof consultarEMarca
 
 const remarcarShape = {
   appointment_id: z.string().uuid(),
-  new_starts_at: z.string().datetime({ offset: true }).describe("o novo início, vindo de `crm_find_free_slots`"),
+  new_starts_at: z
+    .string()
+    .datetime({ offset: true })
+    .describe("o novo início, vindo de `crm_find_free_slots`"),
   notes: z.string().max(2000).optional(),
 };
 
@@ -951,9 +1016,13 @@ export const crmSetAppointmentOutcome: McpToolDefinition<typeof desfechoShape> =
   requiresScope: "mcp:write",
   handler: async (input, ctx) =>
     semDerrubarOTurno("registrado", async () => {
-      if (ctx.actor.type !== "user") return { registrado: false, requer_confirmacao_humana: true,
-        orientacao: "Peça à equipe para abrir o compromisso na Agenda e confirmar a presença.",
-        href: `/app/agenda?compromisso=${input.appointment_id}` };
+      if (ctx.actor.type !== "user")
+        return {
+          registrado: false,
+          requer_confirmacao_humana: true,
+          orientacao: "Peça à equipe para abrir o compromisso na Agenda e confirmar a presença.",
+          href: `/app/agenda?compromisso=${input.appointment_id}`,
+        };
       const r = await alterarAgendamentoHandler(
         ctx.supabase,
         { organization_id: ctx.organizationId, actor: ctx.actor, requestId: ctx.requestId },
