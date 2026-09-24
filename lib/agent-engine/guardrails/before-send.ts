@@ -532,6 +532,14 @@ const AGENDA_CONFIRMED_PATTERN =
   /\b(agendamento|hor[aá]rio|encaixe|vaga|visita)\b[^.!?\n]{0,30}\b(esta|está|ficou|fica|segue)\b[^.!?\n]{0,20}\b(confirmad[oa]|agendad[oa]|marcad[oa]|certinh[oa])\b/i;
 
 /**
+ * Afirmação em 1ª pessoa de que a IA já marcou/agendou ("Marquei como reunião...")
+ * sem chamada da ferramenta no turno. É diferente de "está confirmado" acima:
+ * aqui o verbo vem antes e o objeto é a reunião/consulta/agenda.
+ */
+const AGENDA_DONE_BY_AGENT_PATTERN =
+  /\b(marquei|agendei|confirmei|deixei\s+marcad[oa]|deixei\s+agendad[oa])\b[^.!?\n]{0,80}\b(reuniao|consulta|atendimento|agendamento|horario|agenda)\b|\b(reuniao|consulta|atendimento|agendamento|horario)\b[^.!?\n]{0,40}\b(marcad[oa]|agendad[oa]|confirmad[oa])\b/i;
+
+/**
  * Variante medida em escritório jurídico: o modelo não prometeu "vou verificar"
  * diretamente; terceirizou para uma equipe ("vou pedir para a equipe verificar",
  * "assim que confirmarem", "se der certo"). Com agenda ativa, essa frase é o
@@ -594,8 +602,11 @@ export const agendaStallGate: Gate = {
     const bodySemAcento = semAcento(ctx.body);
     const stall = AGENDA_STALL_PATTERN.test(bodySemAcento);
     const confirmedSemChecar = AGENDA_CONFIRMED_PATTERN.test(bodySemAcento);
+    const marcouSemChecar = AGENDA_DONE_BY_AGENT_PATTERN.test(bodySemAcento);
     const equipeSemChecar = AGENDA_TEAM_STALL_PATTERN.test(bodySemAcento);
-    if (!stall && !confirmedSemChecar && !equipeSemChecar) return { pass: true };
+    if (!stall && !confirmedSemChecar && !marcouSemChecar && !equipeSemChecar) {
+      return { pass: true };
+    }
     return {
       pass: false,
       code: 'agenda_stall_sem_ferramenta',
@@ -610,7 +621,7 @@ export const agendaStallGate: Gate = {
           ctx.agenda.ferramentas.length > 0
             ? nomesDasFerramentas(ctx.agenda.ferramentas)
             : 'a ferramenta de agenda';
-        return confirmedSemChecar
+        return confirmedSemChecar || marcouSemChecar
           ? `Você afirmou que um horário está confirmado/agendado sem ter chamado ${ferramentas} ` +
             'NESTE turno. Nunca diga que está confirmado sem a ferramenta ter registrado de fato — ' +
             'chame a ferramenta e responda com base no retorno dela.'
