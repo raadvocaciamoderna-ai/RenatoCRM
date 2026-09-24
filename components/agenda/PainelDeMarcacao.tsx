@@ -561,8 +561,8 @@ export function PainelDeMarcacao({
         // de altura) um `min-h-[450px]` sem teto estoura o Sheet e o
         // `overflow-hidden` corta em silêncio — o mesmo modo de falha que este
         // painel já teve na horizontal.
-        "flex min-h-[450px] flex-col rounded-lg border border-border bg-surface",
-        empilhado ? "overflow-visible" : "overflow-hidden lg:min-h-0 lg:w-fit lg:flex-row",
+        "flex flex-col rounded-lg border border-border bg-surface",
+        empilhado ? "min-h-0 overflow-visible" : "min-h-[450px] overflow-hidden lg:min-h-0 lg:w-fit lg:flex-row",
         className,
       )}
     >
@@ -572,6 +572,7 @@ export function PainelDeMarcacao({
         data-testid="contexto-da-marcacao"
         className={cn(
           "shrink-0 border-b border-border bg-surface-elevated/50 p-4",
+          empilhado && "p-3",
           !empilhado && "lg:w-[280px] lg:border-b-0 lg:border-r",
         )}
       >
@@ -579,8 +580,8 @@ export function PainelDeMarcacao({
           <AvatarDaPessoa pessoa={responsavel} tamanho="sm" />
           <span className="truncate text-sm font-semibold">{responsavel.nome}</span>
         </div>
-        <h3 className="mt-3 text-base font-semibold leading-tight">{tipo}</h3>
-        <dl className="mt-3 space-y-2 text-xs text-text-muted">
+        <h3 className={cn("text-base font-semibold leading-tight", empilhado ? "mt-2" : "mt-3")}>{tipo}</h3>
+        <dl className={cn("space-y-2 text-xs text-text-muted", empilhado ? "mt-2" : "mt-3")}>
           <div className="flex items-center gap-1.5">
             <Clock size={14} aria-hidden />
             <dd className="tabular-nums">{duracaoMin} minutos</dd>
@@ -593,7 +594,7 @@ export function PainelDeMarcacao({
           ) : null}
         </dl>
         {fuso ? (
-          <p className="mt-4 border-t border-border pt-3 text-[11px] leading-4 text-text-subtle">
+          <p className={cn("border-t border-border text-[11px] leading-4 text-text-subtle", empilhado ? "mt-2 pt-2" : "mt-4 pt-3")}>
             {t("Horários no fuso")} <span className="font-mono">{fuso.replace("_", " ")}</span>.
           </p>
         ) : null}
@@ -621,6 +622,7 @@ export function PainelDeMarcacao({
         data-testid="corpo-da-marcacao"
         className={cn(
           "flex min-w-0 flex-1 flex-col p-4",
+          empilhado && "p-3",
           !empilhado && "lg:min-h-0 lg:min-w-[420px] lg:overflow-y-auto",
         )}
       >

@@ -680,11 +680,11 @@ export function AgendaClient({
             }}
           >
             <SheetHeader>
-              <SheetTitle>
+              <SheetTitle className="text-base">
                 {remarcandoId ? t("Remarcar agendamento") : t("Novo agendamento")}
               </SheetTitle>
             </SheetHeader>
-            <div className="grid shrink-0 gap-3 rounded-lg border p-3 lg:grid-cols-2">
+            <div className="grid shrink-0 gap-2 rounded-lg border p-2 text-sm lg:grid-cols-2">
             {!remarcandoId ? (
               <div className="lg:col-span-2">
               <VinculoDaMarcacao
@@ -696,8 +696,8 @@ export function AgendaClient({
             ) : null}
             {tiposIniciais.length > 1 && (
               <div className="lg:col-span-2" data-testid="tipos-de-agendamento">
-                <p className="mb-2 text-sm font-medium">{t("Tipo de agendamento")}</p>
-                <div className="flex flex-wrap gap-1.5">
+                <p className="mb-1 text-sm font-medium">{t("Tipo de agendamento")}</p>
+                <div className="flex flex-wrap gap-1">
                   {tiposIniciais.map((opcao) => (
                     <button
                       key={opcao.id}
@@ -711,7 +711,7 @@ export function AgendaClient({
                         setEnderecoEditado(null);
                       }}
                       className={cn(
-                        "rounded-full border px-3 py-1 text-xs transition-colors duration-fast",
+                        "rounded-full border px-2.5 py-0.5 text-xs transition-colors duration-fast",
                         opcao.id === tipo?.id
                           ? "border-transparent bg-accent text-accent-foreground"
                           : "border-border text-text-muted hover:border-border-strong hover:text-text",
@@ -751,7 +751,7 @@ export function AgendaClient({
                   // `outline-hidden`, não `outline-none`: no Tailwind 4 os dois
                   // trocaram de significado, e o `outline-none` do v4 apaga o
                   // contorno que o modo de alto contraste do sistema usa.
-                  "mt-1 w-full rounded-md border bg-surface p-2 outline-hidden",
+                  "mt-1 h-9 w-full rounded-md border bg-surface px-2 py-1 outline-hidden",
                   emailConvidadoInvalido
                     ? "border-danger focus:border-danger"
                     : "border-border focus:border-border-strong",
@@ -760,7 +760,7 @@ export function AgendaClient({
                 aria-invalid={emailConvidadoInvalido || undefined}
                 aria-describedby="ajuda-do-convidado"
               />
-              <p id="ajuda-do-convidado" className="mt-1 text-xs text-text-muted">
+              <p id="ajuda-do-convidado" className={cn("mt-1 text-xs text-text-muted", !emailConvidadoInvalido && "hidden")}>
                 {emailConvidadoInvalido
                   ? t("Endereço inválido — confira antes de marcar.")
                   : t(
@@ -785,11 +785,11 @@ export function AgendaClient({
                     rows={1}
                     value={observacao}
                     onChange={(e) => setObservacao(e.target.value)}
-                    className="mt-1 w-full resize-none rounded-md border bg-surface p-2 outline-hidden"
+                    className="mt-1 h-9 w-full resize-none rounded-md border bg-surface px-2 py-1 outline-hidden"
                     placeholder={t("O que a equipe precisa lembrar neste horário")}
                     aria-describedby="ajuda-da-observacao"
                   />
-                  <p id="ajuda-da-observacao" className="mt-1 text-xs text-text-muted">
+                  <p id="ajuda-da-observacao" className="hidden">
                     {t("Aparece na descrição do compromisso.")}
                   </p>
                 </div>
@@ -797,7 +797,7 @@ export function AgendaClient({
             ) : null}
             </div>
             {tipo && (
-              <div className="mt-4 shrink-0 pb-8">
+              <div className="mt-2 shrink-0 pb-4">
                 <PainelDeMarcacao
                 layout="empilhado"
                 // O mês que abre é o da organização, como a grade ao lado.
