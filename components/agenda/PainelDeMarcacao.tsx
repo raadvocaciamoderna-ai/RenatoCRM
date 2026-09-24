@@ -87,6 +87,7 @@ export function PainelDeMarcacao({
   permiteEncaixe = false,
   onConfirmar,
   onVerNaAgenda,
+  layout = "responsivo",
   className,
 }: {
   ancora: Date;
@@ -205,6 +206,7 @@ export function PainelDeMarcacao({
    */
   permiteEncaixe?: boolean;
   onConfirmar?: (instante: string) => void | Promise<unknown>;
+  layout?: "responsivo" | "empilhado";
   className?: string;
 }) {
   const localeDaData = useLocaleDeData();
@@ -247,6 +249,7 @@ export function PainelDeMarcacao({
   const confirmacaoRef = React.useRef<HTMLDivElement>(null);
   const instanteEscolhido = horario?.instante;
   const mensagemDaRecusa = recusa?.mensagem;
+  const empilhado = layout === "empilhado";
   React.useEffect(() => {
     if (!instanteEscolhido) return;
     confirmacaoRef.current?.scrollIntoView?.({ block: "nearest" });
@@ -558,7 +561,8 @@ export function PainelDeMarcacao({
         // de altura) um `min-h-[450px]` sem teto estoura o Sheet e o
         // `overflow-hidden` corta em silêncio — o mesmo modo de falha que este
         // painel já teve na horizontal.
-        "flex min-h-[450px] flex-col overflow-hidden rounded-lg border border-border bg-surface lg:min-h-0 lg:w-fit lg:flex-row",
+        "flex min-h-[450px] flex-col rounded-lg border border-border bg-surface",
+        empilhado ? "overflow-visible" : "overflow-hidden lg:min-h-0 lg:w-fit lg:flex-row",
         className,
       )}
     >
@@ -566,7 +570,10 @@ export function PainelDeMarcacao({
           formulário cego: a pessoa escolhe um horário sem lembrar de quê. */}
       <aside
         data-testid="contexto-da-marcacao"
-        className="shrink-0 border-b border-border bg-surface-elevated/50 p-4 lg:w-[280px] lg:border-b-0 lg:border-r"
+        className={cn(
+          "shrink-0 border-b border-border bg-surface-elevated/50 p-4",
+          !empilhado && "lg:w-[280px] lg:border-b-0 lg:border-r",
+        )}
       >
         <div className="flex items-center gap-2">
           <AvatarDaPessoa pessoa={responsavel} tamanho="sm" />
@@ -612,7 +619,10 @@ export function PainelDeMarcacao({
       */}
       <div
         data-testid="corpo-da-marcacao"
-        className="flex min-w-0 flex-1 flex-col p-4 lg:min-h-0 lg:min-w-[420px] lg:overflow-y-auto"
+        className={cn(
+          "flex min-w-0 flex-1 flex-col p-4",
+          !empilhado && "lg:min-h-0 lg:min-w-[420px] lg:overflow-y-auto",
+        )}
       >
         <div className="mb-3 flex items-center justify-between">
           <span className="text-sm font-semibold first-letter:uppercase">
@@ -891,12 +901,12 @@ export function PainelDeMarcacao({
         //
         // Era `md:`, e é o que punha 980px de colunas dentro de um Sheet de
         // 768px em toda tela de notebook.
-        className="agenda-coluna-horarios lg:shrink-0"
+        className={cn("agenda-coluna-horarios", !empilhado && "lg:shrink-0")}
       >
         {/* `w-full` empilhado, largura fixa só quando é coluna de verdade. A
             largura fixa em qualquer breakpoint era o que impedia o painel de
             caber: o conteúdo segurava 240px mesmo quando o pai não os tinha. */}
-        <div className="flex h-full w-full flex-col p-3 lg:w-[280px]">
+        <div className={cn("flex h-full w-full flex-col p-3", !empilhado && "lg:w-[280px]")}>
           <p className="mb-2 shrink-0 text-xs font-semibold text-text-muted first-letter:uppercase">
             {dia ? format(dia, t("EEEE, d 'de' MMM"), { locale: localeDaData }) : ""}
           </p>
@@ -942,7 +952,10 @@ export function PainelDeMarcacao({
           */}
           <div
             data-testid="lista-de-horarios"
-            className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pr-1 lg:max-h-[min(42vh,380px)]"
+            className={cn(
+              "flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pr-1",
+              !empilhado && "lg:max-h-[min(42vh,380px)]",
+            )}
           >
             {doDia.map((h) => (
               <button

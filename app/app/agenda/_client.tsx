@@ -774,6 +774,7 @@ export function AgendaClient({
           {tipo && (
             <div className="mt-4 shrink-0 pb-8">
               <PainelDeMarcacao
+                layout="empilhado"
                 // O mês que abre é o da organização, como a grade ao lado.
                 ancora={ancoraLocalDoDia(hojeNaOrganizacao)}
                 agora={new Date()}
