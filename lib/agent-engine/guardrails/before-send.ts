@@ -532,6 +532,16 @@ const AGENDA_CONFIRMED_PATTERN =
   /\b(agendamento|hor[aá]rio|encaixe|vaga|visita)\b[^.!?\n]{0,30}\b(esta|está|ficou|fica|segue)\b[^.!?\n]{0,20}\b(confirmad[oa]|agendad[oa]|marcad[oa]|certinh[oa])\b/i;
 
 /**
+ * Variante medida em escritório jurídico: o modelo não prometeu "vou verificar"
+ * diretamente; terceirizou para uma equipe ("vou pedir para a equipe verificar",
+ * "assim que confirmarem", "se der certo"). Com agenda ativa, essa frase é o
+ * mesmo defeito operacional: há ferramenta para checar/marcar agora, mas a
+ * resposta empurra a responsabilidade para alguém que não foi acionado.
+ */
+const AGENDA_TEAM_STALL_PATTERN =
+  /\b(vou|vamos|irei|iremos)\b[^.!?\n]{0,80}\b(equipe|time|atendente|pessoa)\b[^.!?\n]{0,80}\b(verificar|confirmar|checar|retornar|entrar em contato)\b|\b(assim que confirmarem|se der certo|equipe vai verificar|equipe entra em contato|vou pedir para a equipe)\b/i;
+
+/**
  * `\b` do JS é ASCII-only ("word char" = `[A-Za-z0-9_]`): `á` não conta como letra
  * pra ele. Isso faz `\best[aá]\b` NUNCA casar "está" (acentuado) seguido de espaço —
  * o `á` fica "sem fronteira" com o espaço seguinte (nem um nem outro é \w) e o `\b`
@@ -584,7 +594,8 @@ export const agendaStallGate: Gate = {
     const bodySemAcento = semAcento(ctx.body);
     const stall = AGENDA_STALL_PATTERN.test(bodySemAcento);
     const confirmedSemChecar = AGENDA_CONFIRMED_PATTERN.test(bodySemAcento);
-    if (!stall && !confirmedSemChecar) return { pass: true };
+    const equipeSemChecar = AGENDA_TEAM_STALL_PATTERN.test(bodySemAcento);
+    if (!stall && !confirmedSemChecar && !equipeSemChecar) return { pass: true };
     return {
       pass: false,
       code: 'agenda_stall_sem_ferramenta',
@@ -603,6 +614,10 @@ export const agendaStallGate: Gate = {
           ? `Você afirmou que um horário está confirmado/agendado sem ter chamado ${ferramentas} ` +
             'NESTE turno. Nunca diga que está confirmado sem a ferramenta ter registrado de fato — ' +
             'chame a ferramenta e responda com base no retorno dela.'
+          : equipeSemChecar
+            ? `Você empurrou o agendamento para a equipe sem ter chamado ${ferramentas} NESTE ` +
+              'turno. Com agenda ativa, você deve chamar a ferramenta agora para checar/marcar; ' +
+              'não diga "vou pedir para a equipe", "se der certo" nem "assim que confirmarem".'
           : `Você prometeu verificar/confirmar um horário sem ter chamado ${ferramentas} NESTE ` +
             'turno. Chame a ferramenta agora e responda com base no retorno dela — não repita a ' +
             'promessa sem checar.';
