@@ -258,6 +258,36 @@ export function motivoDoVazioDaAgenda(resultado: unknown): string | null {
   return null;
 }
 
+type CompromissoFuturoDoContato = {
+  id: string;
+  inicio: string;
+  situacao: string;
+};
+
+async function compromissoFuturoVivoDoContato(
+  ctx: McpContext,
+  contactId: string,
+  agora: Date,
+): Promise<CompromissoFuturoDoContato | null> {
+  const r = await listaAgendamentos(ctx.supabase, ctx.organizationId, {
+    contactId,
+    leadId: null,
+    dia: null,
+    ownerUserId: null,
+    situacao: null,
+    limite: 10,
+  });
+  if (!r.ok) return null;
+
+  return (
+    r.agendamentos
+      .filter((a) => a.situacao !== "cancelled")
+      .filter((a) => new Date(a.iniciaEm).getTime() >= agora.getTime())
+      .sort((a, b) => new Date(a.iniciaEm).getTime() - new Date(b.iniciaEm).getTime())
+      .map((a) => ({ id: a.id, inicio: a.iniciaEm, situacao: a.situacao }))[0] ?? null
+  );
+}
+
 /**
  * O que uma resposta de CONSULTA publica — usado por `crm_find_free_slots` E pela
  * ferramenta que consulta e marca numa chamada só (issue #831).
@@ -812,6 +842,45 @@ export const crmFindAndBookAppointment: McpToolDefinition<typeof consultarEMarca
           `${pedido} não está livre em ${input.dia}, e NADA foi marcado. Ofereça ao cliente uma ` +
           "das opções de `horarios` (é o que a agenda realmente tem nesse dia); se a lista " +
           "vier vazia, ofereça consultar outro dia com `crm_find_free_slots`.",
+      };
+    }
+
+    const compromissoExistente = await compromissoFuturoVivoDoContato(
+      ctx,
+      input.contact_id,
+      agora,
+    );
+    if (compromissoExistente) {
+      const resultado = await semDerrubarOTurno("remarcado", async () => {
+        const r = await alterarAgendamentoHandler(
+          ctx.supabase,
+          { organization_id: ctx.organizationId, actor: ctx.actor, requestId: ctx.requestId },
+          {
+            id: compromissoExistente.id,
+            starts_at: achado.inicio.toISOString(),
+            ...(input.notes !== undefined ? { notes: input.notes } : {}),
+          },
+        );
+        return { marcado: true, remarcado: true, compromisso: r };
+      });
+
+      const falhou =
+        typeof resultado === "object" &&
+        resultado !== null &&
+        (resultado as { remarcado?: unknown }).remarcado === false;
+
+      return {
+        ...(resultado as Record<string, unknown>),
+        inicio: achado.inicio.toISOString(),
+        quando: rotuloLocal(achado.inicio, consulta.fusoDaRegra),
+        compromisso_anterior: compromissoExistente,
+        ...(falhou
+          ? {}
+          : {
+              mensagem:
+                "O cliente já tinha compromisso futuro vivo. Esta chamada REMARCOU o compromisso existente; " +
+                "não criou outro. Confirme a nova data e hora ao cliente.",
+            }),
       };
     }
 

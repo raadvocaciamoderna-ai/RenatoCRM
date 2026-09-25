@@ -44,7 +44,9 @@ vi.mock("@/lib/agenda/consulta", async (original) => {
   };
 });
 
-const { horariosLivresDaOrg, idDoTipoPorSlug } = await import("@/lib/agenda/consulta");
+const { horariosLivresDaOrg, idDoTipoPorSlug, listaAgendamentos } = await import(
+  "@/lib/agenda/consulta"
+);
 const { crmFindAndBookAppointment } = await import("@/lib/mcp/tools/agendamento");
 const handlers = await import("@/app/api/v1/agenda/agendamentos/_handler");
 const { temFerramentaDeMarcacao } = await import("@/lib/agent-engine/agent/inbound-turn");
@@ -96,7 +98,13 @@ describe("crm_find_and_book_appointment", () => {
     vi.clearAllMocks();
     vi.mocked(horariosLivresDaOrg).mockResolvedValue(SUCESSO);
     vi.mocked(idDoTipoPorSlug).mockResolvedValue({ id: "tipo-1" } as never);
+    vi.mocked(listaAgendamentos).mockResolvedValue({ ok: true, agendamentos: [] } as never);
     vi.mocked(handlers.marcarAgendamentoHandler).mockResolvedValue(COMPROMISSO as never);
+    vi.mocked(handlers.alterarAgendamentoHandler).mockResolvedValue({
+      id: "apt-antigo",
+      status: "confirmed",
+      meeting_state: "ready",
+    } as never);
   });
 
   it("horário livre: marca na MESMA chamada, com o instante que a agenda confirmou", async () => {
@@ -153,6 +161,42 @@ describe("crm_find_and_book_appointment", () => {
     );
     const [, , corpo] = vi.mocked(handlers.marcarAgendamentoHandler).mock.calls[0]!;
     expect(corpo).not.toHaveProperty("owner_user_id", UUID_QUE_NAO_E_ATENDENTE);
+  });
+
+  it("cliente com compromisso futuro vivo: remarca a linha existente em vez de criar duplicata", async () => {
+    vi.mocked(listaAgendamentos).mockResolvedValue({
+      ok: true,
+      agendamentos: [
+        {
+          id: "apt-antigo",
+          titulo: "Reunião online",
+          iniciaEm: "2026-10-02T17:00:00.000Z",
+          terminaEm: "2026-10-02T17:30:00.000Z",
+          fuso: "America/Sao_Paulo",
+          situacao: "confirmed",
+          meetingState: "ready",
+          meetingUrl: "https://meet.google.com/old",
+          contatoId: CONTATO,
+          donoId: "dono-1",
+        },
+      ],
+    } as never);
+
+    const r = (await crmFindAndBookAppointment.handler(
+      { event_type_slug: "consulta", dia: "2026-09-01", horario: "14:00", contact_id: CONTATO },
+      ctx,
+    )) as Record<string, unknown>;
+
+    expect(r.marcado).toBe(true);
+    expect(r.remarcado).toBe(true);
+    expect(handlers.marcarAgendamentoHandler).not.toHaveBeenCalled();
+    expect(handlers.alterarAgendamentoHandler).toHaveBeenCalledTimes(1);
+    const [, , corpo] = vi.mocked(handlers.alterarAgendamentoHandler).mock.calls[0]!;
+    expect(corpo).toMatchObject({
+      id: "apt-antigo",
+      starts_at: "2026-09-01T17:00:00.000Z",
+    });
+    expect(String(r.mensagem)).toContain("não criou outro");
   });
 
   it("horário pedido fora da lista: NADA é marcado e a resposta traz os horários do dia", async () => {
