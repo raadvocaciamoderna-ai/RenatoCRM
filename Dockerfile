@@ -26,6 +26,9 @@ ARG NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
 ARG NEXT_PUBLIC_APP_URL=https://placeholder.invalid
 ARG NEXT_PUBLIC_ADMIN_URL=https://placeholder.invalid
+# O CI executa `pnpm typecheck` em passo próprio. Na construção da imagem na VPS,
+# repetir o TypeScript dentro de `next build` pode ultrapassar a memória disponível.
+ARG NEXT_BUILD_SKIP_TYPECHECK=1
 # O build do Next é faminto: o heap default do Node (~2GB) estoura. NODE_OPTIONS
 # eleva pra 4GB. Isso é custo de QUEM BUILDA — o CI —, não de quem instala: o
 # caminho normal do self-hoster é `docker compose pull`, e o install.sh não
@@ -35,6 +38,7 @@ ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
     NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
     NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
     NEXT_PUBLIC_ADMIN_URL=$NEXT_PUBLIC_ADMIN_URL \
+    NEXT_BUILD_SKIP_TYPECHECK=$NEXT_BUILD_SKIP_TYPECHECK \
     NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     NODE_OPTIONS=--max-old-space-size=4096
