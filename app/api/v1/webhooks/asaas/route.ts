@@ -132,6 +132,121 @@ export async function POST(req: NextRequest): Promise<Response> {
     }
   }
 
+  // Cobranças geradas por ASSINATURA ou PARCELAMENTO nascem no Asaas sem uma
+  // linha local prévia. O vínculo com o recurso-pai é a autorização para
+  // adotá-las: depois disto elas seguem exatamente o mesmo fluxo financeiro
+  // idempotente de uma cobrança avulsa.
+  if (!localPayment && event.payment.subscription) {
+    const { data: subscription, error: subscriptionError } = await admin
+      .from("asaas_subscriptions")
+      .select(
+        "organization_id, contact_id, asaas_customer_id, billing_type, amount_cents, next_due_date, description, account_id, account_plan_id, created_by_user_id",
+      )
+      .eq("asaas_subscription_id", event.payment.subscription)
+      .maybeSingle();
+
+    if (subscriptionError) {
+      await failEvent(event.id, subscriptionError.message);
+      return fail("internal_error", subscriptionError.message, 500, { requestId });
+    }
+
+    if (subscription) {
+      const { data: adopted, error: adoptError } = await admin
+        .from("asaas_payments")
+        .upsert(
+          {
+            organization_id: subscription.organization_id,
+            contact_id: subscription.contact_id,
+            asaas_payment_id: event.payment.id,
+            asaas_customer_id: event.payment.customer ?? subscription.asaas_customer_id,
+            external_reference: `asaas-webhook:${event.payment.id}`,
+            subscription_id: event.payment.subscription,
+            billing_type: event.payment.billingType ?? subscription.billing_type,
+            amount_cents:
+              typeof event.payment.value === "number"
+                ? Math.round(event.payment.value * 100)
+                : subscription.amount_cents,
+            due_date: event.payment.dueDate ?? subscription.next_due_date,
+            description: event.payment.description ?? subscription.description,
+            status: event.payment.status ?? "PENDING",
+            invoice_url: event.payment.invoiceUrl ?? null,
+            account_id: subscription.account_id,
+            account_plan_id: subscription.account_plan_id,
+            created_by_user_id: subscription.created_by_user_id,
+          },
+          { onConflict: "asaas_payment_id" },
+        )
+        .select(
+          "id, organization_id, asaas_payment_id, external_reference, status, financial_entry_id, reversal_entry_id",
+        )
+        .single();
+
+      if (adoptError) {
+        await failEvent(event.id, adoptError.message, subscription.organization_id);
+        return fail("internal_error", adoptError.message, 500, { requestId });
+      }
+      localPayment = adopted;
+    }
+  }
+
+  if (!localPayment && event.payment.installment) {
+    const { data: installment, error: installmentError } = await admin
+      .from("asaas_installments")
+      .select(
+        "organization_id, contact_id, asaas_customer_id, billing_type, total_amount_cents, installment_count, first_due_date, description, account_id, account_plan_id, created_by_user_id",
+      )
+      .eq("asaas_installment_id", event.payment.installment)
+      .maybeSingle();
+
+    if (installmentError) {
+      await failEvent(event.id, installmentError.message);
+      return fail("internal_error", installmentError.message, 500, { requestId });
+    }
+
+    if (installment) {
+      const fallbackAmount = Math.max(
+        1,
+        Math.round(installment.total_amount_cents / installment.installment_count),
+      );
+      const { data: adopted, error: adoptError } = await admin
+        .from("asaas_payments")
+        .upsert(
+          {
+            organization_id: installment.organization_id,
+            contact_id: installment.contact_id,
+            asaas_payment_id: event.payment.id,
+            asaas_customer_id: event.payment.customer ?? installment.asaas_customer_id,
+            external_reference: `asaas-webhook:${event.payment.id}`,
+            installment_id: event.payment.installment,
+            installment_number: event.payment.installmentNumber ?? null,
+            billing_type: event.payment.billingType ?? installment.billing_type,
+            amount_cents:
+              typeof event.payment.value === "number"
+                ? Math.round(event.payment.value * 100)
+                : fallbackAmount,
+            due_date: event.payment.dueDate ?? installment.first_due_date,
+            description: event.payment.description ?? installment.description,
+            status: event.payment.status ?? "PENDING",
+            invoice_url: event.payment.invoiceUrl ?? null,
+            account_id: installment.account_id,
+            account_plan_id: installment.account_plan_id,
+            created_by_user_id: installment.created_by_user_id,
+          },
+          { onConflict: "asaas_payment_id" },
+        )
+        .select(
+          "id, organization_id, asaas_payment_id, external_reference, status, financial_entry_id, reversal_entry_id",
+        )
+        .single();
+
+      if (adoptError) {
+        await failEvent(event.id, adoptError.message, installment.organization_id);
+        return fail("internal_error", adoptError.message, 500, { requestId });
+      }
+      localPayment = adopted;
+    }
+  }
+
   // O Asaas pode enviar eventos de cobranças criadas fora do CRM. Elas não são
   // erro e não devem pausar a fila do webhook.
   if (!localPayment) {
