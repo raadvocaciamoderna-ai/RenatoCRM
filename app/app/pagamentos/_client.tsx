@@ -6,8 +6,21 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { showApiError } from "@/components/feedback/ApiErrorToast";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useT } from "@/hooks/i18n/useT";
+import {
+  ArrowSquareOut,
+  ChatCircle,
+  CheckCircle,
+  ClockCountdown,
+  Receipt,
+  Users,
+  Warning,
+  WhatsappLogo,
+} from "@/lib/ui/icons";
 import { apiClient } from "@/lib/api/client";
 
 type Conta = { id: string; name: string };
@@ -25,6 +38,11 @@ type ContactDetail = ContactSummary & {
   cpf_decrypted?: string | null;
   cpf_available?: boolean;
   cpf_decrypt_denied?: boolean;
+  conversa?: {
+    id: string;
+    preview?: string | null;
+    unread?: number;
+  } | null;
 };
 
 type Cobranca = {
@@ -42,6 +60,7 @@ type Cobranca = {
   invoice_url: string | null;
   needs_reconciliation: boolean;
   created_at: string;
+  contact: ContactSummary | null;
 };
 
 type Assinatura = {
@@ -56,6 +75,7 @@ type Assinatura = {
   max_payments: number | null;
   status: string;
   created_at: string;
+  contact: ContactSummary | null;
 };
 
 type Pix = {
@@ -191,6 +211,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
   const [filtro, setFiltro] = useState<Categoria>("all");
   const [filtroTipo, setFiltroTipo] = useState<"all" | Cobranca["billing_type"]>("all");
   const [mensagemAcao, setMensagemAcao] = useState<string | null>(null);
+  const [conversaEnviadaId, setConversaEnviadaId] = useState<string | null>(null);
 
   const contas = useQuery({
     queryKey: ["financeiro", "catalogo", "contas"],
@@ -373,6 +394,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
       setResultado(data);
       setCopiado(false);
       setMensagemAcao(null);
+      setConversaEnviadaId(null);
       void qc.invalidateQueries({ queryKey: ["financeiro", "asaas", "cobrancas"] });
       void qc.invalidateQueries({ queryKey: ["financeiro", "asaas", "assinaturas"] });
     },
@@ -382,12 +404,17 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
   const enviarWhatsApp = useMutation({
     mutationFn: async (paymentId: string) =>
       (
-        await apiClient.post<{ data: { sent: boolean } }>(
+        await apiClient.post<{
+          data: { sent: boolean; conversation_id: string; message_id: string };
+        }>(
           "/api/v1/financeiro/asaas/cobrancas/enviar-whatsapp",
           { payment_id: paymentId },
         )
       ).data,
-    onSuccess: () => setMensagemAcao(t("Cobrança enviada pelo WhatsApp.")),
+    onSuccess: (data) => {
+      setMensagemAcao(t("Cobrança enviada pelo WhatsApp."));
+      setConversaEnviadaId(data.conversation_id);
+    },
     onError: showApiError,
   });
 
