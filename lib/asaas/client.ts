@@ -227,6 +227,20 @@ export async function createAsaasPayment(input: {
   });
 }
 
+export async function findAsaasPaymentByExternalReference(
+  externalReference: string,
+): Promise<AsaasPayment | null> {
+  const params = new URLSearchParams({
+    externalReference,
+    limit: "1",
+    offset: "0",
+  });
+  const result = await asaasRequest<AsaasList<AsaasPayment>>(
+    `/payments?${params.toString()}`,
+  );
+  return result.data?.[0] ?? null;
+}
+
 export async function getAsaasPixQrCode(paymentId: string): Promise<AsaasPixQrCode> {
   return asaasRequest<AsaasPixQrCode>(
     `/payments/${encodeURIComponent(paymentId)}/pixQrCode`,
