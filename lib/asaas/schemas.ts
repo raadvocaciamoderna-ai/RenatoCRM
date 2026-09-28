@@ -20,10 +20,36 @@ export const criarClienteAsaasSchema = z.object({
 
 export const criarCobrancaAsaasSchema = z.object({
   customer_id: z.string().trim().min(3).max(100),
+  contact_id: z.string().uuid().optional(),
   billing_type: z.enum(["UNDEFINED", "BOLETO", "CREDIT_CARD", "PIX"]).default("PIX"),
   value_cents: z.number().int().min(1).max(1_000_000_000),
   due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de vencimento inválida."),
   description: z.string().trim().min(1).max(500).optional(),
+  account_id: z.string().uuid(),
+  account_plan_id: z.string().uuid().nullish(),
+});
+
+export const criarParcelamentoAsaasSchema = z.object({
+  customer_id: z.string().trim().min(3).max(100),
+  contact_id: z.string().uuid().optional(),
+  billing_type: z.enum(["UNDEFINED", "BOLETO", "CREDIT_CARD", "PIX"]).default("PIX"),
+  total_value_cents: z.number().int().min(2).max(1_000_000_000),
+  installment_count: z.number().int().min(2).max(24),
+  due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de vencimento inválida."),
+  description: z.string().trim().min(1).max(500).optional(),
+  account_id: z.string().uuid(),
+  account_plan_id: z.string().uuid().nullish(),
+});
+
+export const criarAssinaturaAsaasSchema = z.object({
+  customer_id: z.string().trim().min(3).max(100),
+  contact_id: z.string().uuid().optional(),
+  billing_type: z.enum(["UNDEFINED", "BOLETO", "CREDIT_CARD", "PIX"]).default("PIX"),
+  value_cents: z.number().int().min(1).max(1_000_000_000),
+  next_due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de vencimento inválida."),
+  cycle: z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY", "BIMONTHLY", "QUARTERLY", "SEMIANNUALLY", "YEARLY"]),
+  description: z.string().trim().min(1).max(500).optional(),
+  max_payments: z.number().int().min(1).max(240).optional(),
   account_id: z.string().uuid(),
   account_plan_id: z.string().uuid().nullish(),
 });
@@ -55,3 +81,5 @@ export const webhookAsaasSchema = z.object({
 
 export type CriarClienteAsaasInput = z.infer<typeof criarClienteAsaasSchema>;
 export type CriarCobrancaAsaasInput = z.infer<typeof criarCobrancaAsaasSchema>;
+export type CriarParcelamentoAsaasInput = z.infer<typeof criarParcelamentoAsaasSchema>;
+export type CriarAssinaturaAsaasInput = z.infer<typeof criarAssinaturaAsaasSchema>;
