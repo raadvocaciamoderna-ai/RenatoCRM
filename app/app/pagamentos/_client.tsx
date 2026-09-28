@@ -693,18 +693,30 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
                 placeholder={t("Opcional")}
               />
             </label>
-            <label className="space-y-1 text-sm">
+            <div className="space-y-1.5 text-sm md:col-span-2 lg:col-span-3">
               <span>{t("Tipo de cobrança")}</span>
-              <select
-                className="min-h-11 w-full rounded-md border p-2"
-                value={modo}
-                onChange={(e) => setModo(e.target.value as Modo)}
-              >
-                <option value="single">{t("Avulsa")}</option>
-                <option value="installment">{t("Parcelada")}</option>
-                <option value="subscription">{t("Recorrente / mensalidade")}</option>
-              </select>
-            </label>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {([
+                  ["single", t("Avulsa"), t("Uma cobrança com vencimento definido.")],
+                  ["installment", t("Parcelada"), t("Divida o valor total em parcelas.")],
+                  ["subscription", t("Recorrente / mensalidade"), t("Gere cobranças automaticamente por período.")],
+                ] as const).map(([value, label, help]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setModo(value)}
+                    className={
+                      modo === value
+                        ? "rounded-lg border border-accent bg-accent-soft p-3 text-left shadow-xs"
+                        : "rounded-lg border border-border bg-surface p-3 text-left transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                    }
+                  >
+                    <span className="block font-medium text-text">{label}</span>
+                    <span className="mt-1 block text-xs leading-relaxed text-text-muted">{help}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
             <label className="space-y-1 text-sm">
               <span>{modo === "installment" ? t("Valor total") : t("Valor")}</span>
               <input
