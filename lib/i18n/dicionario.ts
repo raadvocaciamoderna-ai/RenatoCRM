@@ -73,7 +73,6 @@ export const DICIONARIO: Traducoes = {
   "Crie e acompanhe cobranças Pix, boleto e cartão pelo Asaas.": {
     es: "Crea y consulta cobros Pix, boleto y tarjeta con Asaas.",
   },
-  Descrição: { es: "Descripción" },
   "Enviar WhatsApp": { es: "Enviar por WhatsApp" },
   Estornado: { es: "Reembolsado" },
   Estornados: { es: "Reembolsados" },
