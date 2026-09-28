@@ -31,7 +31,7 @@ export async function GET(req: NextRequest): Promise<Response> {
   const { data, error } = await supabase
     .from("asaas_payments")
     .select(
-      "id, asaas_payment_id, billing_type, amount_cents, due_date, description, status, invoice_url, needs_reconciliation, created_at",
+      "id, contact_id, asaas_payment_id, installment_id, subscription_id, installment_number, billing_type, amount_cents, due_date, description, status, invoice_url, needs_reconciliation, created_at",
     )
     .eq("organization_id", authz.org.orgId)
     .order("created_at", { ascending: false })
@@ -107,6 +107,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     id: localPaymentId,
     organization_id: authz.org.orgId,
     asaas_customer_id: parsed.data.customer_id,
+    contact_id: parsed.data.contact_id ?? null,
     external_reference: externalReference,
     billing_type: parsed.data.billing_type,
     amount_cents: parsed.data.value_cents,
