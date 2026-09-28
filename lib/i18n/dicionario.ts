@@ -56,6 +56,13 @@ export const DICIONARIO: Traducoes = {
   "Cliente escolhe": { es: "El cliente elige" },
   "Cobrança criada": { es: "Cobro creado" },
   "Cobrança enviada pelo WhatsApp.": { es: "Cobro enviado por WhatsApp." },
+  "Cobrança sem contato vinculado": { es: "Cobro sin contacto vinculado" },
+  "Configurações financeiras": { es: "Configuración financiera" },
+  "Crie cobranças para clientes do CRM, envie pelo WhatsApp e acompanhe recebimentos, atrasos e recorrências.": {
+    es: "Crea cobros para clientes del CRM, envíalos por WhatsApp y acompaña pagos, atrasos y recurrencias.",
+  },
+  "Divida o valor total em parcelas.": { es: "Divide el valor total en cuotas." },
+  "Gere cobranças automaticamente por período.": { es: "Genera cobros automáticamente por período." },
   cobranças: { es: "cobros" },
   Cobranças: { es: "Cobros" },
   Cobrar: { es: "Cobrar" },
@@ -139,6 +146,7 @@ export const DICIONARIO: Traducoes = {
   Trimestral: { es: "Trimestral" },
   "Valor total": { es: "Valor total" },
   "Vazio = sem limite": { es: "Vacío = sin límite" },
+  "Ver cliente": { es: "Ver cliente" },
   "vence em": { es: "vence el" },
   Vencidos: { es: "Vencidos" },
 
@@ -6468,6 +6476,7 @@ export const DICIONARIO: Traducoes = {
   "CPF (opcional)": { es: "CPF (opcional)" },
   "Criar contato": { es: "Crear contacto" },
   "Trocar contato": { es: "Cambiar contacto" },
+  "Uma cobrança com vencimento definido.": { es: "Un cobro con fecha de vencimiento definida." },
   "Sem contato, este lead não recebe WhatsApp nem entra nas automações.": {
     es: "Sin contacto, este lead no recibe WhatsApp ni entra en las automatizaciones.",
   },

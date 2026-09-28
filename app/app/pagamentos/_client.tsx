@@ -6,8 +6,21 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { showApiError } from "@/components/feedback/ApiErrorToast";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useT } from "@/hooks/i18n/useT";
+import {
+  ArrowSquareOut,
+  ChatCircle,
+  CheckCircle,
+  ClockCountdown,
+  Receipt,
+  Users,
+  Warning,
+  WhatsappLogo,
+} from "@/lib/ui/icons";
 import { apiClient } from "@/lib/api/client";
 
 type Conta = { id: string; name: string };
@@ -25,6 +38,11 @@ type ContactDetail = ContactSummary & {
   cpf_decrypted?: string | null;
   cpf_available?: boolean;
   cpf_decrypt_denied?: boolean;
+  conversa?: {
+    id: string;
+    preview?: string | null;
+    unread?: number;
+  } | null;
 };
 
 type Cobranca = {
@@ -42,6 +60,7 @@ type Cobranca = {
   invoice_url: string | null;
   needs_reconciliation: boolean;
   created_at: string;
+  contact: ContactSummary | null;
 };
 
 type Assinatura = {
@@ -56,6 +75,7 @@ type Assinatura = {
   max_payments: number | null;
   status: string;
   created_at: string;
+  contact: ContactSummary | null;
 };
 
 type Pix = {
@@ -165,6 +185,20 @@ function categoria(status: string): Exclude<Categoria, "all"> {
   return "pending";
 }
 
+function statusVariant(status: string): "success" | "warning" | "error" | "info" | "neutral" {
+  const cat = categoria(status);
+  if (cat === "received") return "success";
+  if (cat === "overdue" || cat === "failed") return "error";
+  if (cat === "pending") return "warning";
+  if (cat === "refunded") return "neutral";
+  return "info";
+}
+
+function dataBr(value: string): string {
+  const [ano, mes, dia] = value.split("-");
+  return ano && mes && dia ? `${dia}/${mes}/${ano}` : value;
+}
+
 export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
   const t = useT();
   const qc = useQueryClient();
@@ -191,6 +225,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
   const [filtro, setFiltro] = useState<Categoria>("all");
   const [filtroTipo, setFiltroTipo] = useState<"all" | Cobranca["billing_type"]>("all");
   const [mensagemAcao, setMensagemAcao] = useState<string | null>(null);
+  const [conversaEnviadaId, setConversaEnviadaId] = useState<string | null>(null);
 
   const contas = useQuery({
     queryKey: ["financeiro", "catalogo", "contas"],
@@ -373,6 +408,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
       setResultado(data);
       setCopiado(false);
       setMensagemAcao(null);
+      setConversaEnviadaId(null);
       void qc.invalidateQueries({ queryKey: ["financeiro", "asaas", "cobrancas"] });
       void qc.invalidateQueries({ queryKey: ["financeiro", "asaas", "assinaturas"] });
     },
@@ -382,12 +418,17 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
   const enviarWhatsApp = useMutation({
     mutationFn: async (paymentId: string) =>
       (
-        await apiClient.post<{ data: { sent: boolean } }>(
+        await apiClient.post<{
+          data: { sent: boolean; conversation_id: string; message_id: string };
+        }>(
           "/api/v1/financeiro/asaas/cobrancas/enviar-whatsapp",
           { payment_id: paymentId },
         )
       ).data,
-    onSuccess: () => setMensagemAcao(t("Cobrança enviada pelo WhatsApp.")),
+    onSuccess: (data) => {
+      setMensagemAcao(t("Cobrança enviada pelo WhatsApp."));
+      setConversaEnviadaId(data.conversation_id);
+    },
     onError: showApiError,
   });
 
@@ -457,29 +498,69 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
 
   return (
     <div className="space-y-4">
-      <section className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border p-4">
-          <p className="text-xs uppercase text-text-muted">{t("A receber")}</p>
-          <p className="mt-1 text-xl font-semibold">{dinheiro(totais.receber)}</p>
-        </div>
-        <div className="rounded-xl border p-4">
-          <p className="text-xs uppercase text-text-muted">{t("Recebido")}</p>
-          <p className="mt-1 text-xl font-semibold">{dinheiro(totais.recebido)}</p>
-        </div>
-        <div className="rounded-xl border p-4">
-          <p className="text-xs uppercase text-text-muted">{t("Vencido")}</p>
-          <p className="mt-1 text-xl font-semibold">{dinheiro(totais.vencido)}</p>
-        </div>
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Card className="overflow-hidden">
+          <CardContent className="flex items-center justify-between gap-4 p-5">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-text-muted">{t("A receber")}</p>
+              <p className="mt-2 text-2xl font-semibold tabular-nums">{dinheiro(totais.receber)}</p>
+            </div>
+            <div className="rounded-full bg-info-bg p-3 text-info-fg">
+              <ClockCountdown size={22} weight="duotone" aria-hidden />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="overflow-hidden">
+          <CardContent className="flex items-center justify-between gap-4 p-5">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-text-muted">{t("Recebido")}</p>
+              <p className="mt-2 text-2xl font-semibold tabular-nums">{dinheiro(totais.recebido)}</p>
+            </div>
+            <div className="rounded-full bg-success-bg p-3 text-success-fg">
+              <CheckCircle size={22} weight="duotone" aria-hidden />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="overflow-hidden">
+          <CardContent className="flex items-center justify-between gap-4 p-5">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-text-muted">{t("Vencido")}</p>
+              <p className="mt-2 text-2xl font-semibold tabular-nums">{dinheiro(totais.vencido)}</p>
+            </div>
+            <div className="rounded-full bg-error-bg p-3 text-error-fg">
+              <Warning size={22} weight="duotone" aria-hidden />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="overflow-hidden">
+          <CardContent className="flex items-center justify-between gap-4 p-5">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-text-muted">{t("Recorrências / mensalidades")}</p>
+              <p className="mt-2 text-2xl font-semibold tabular-nums">{assinaturas.data?.length ?? 0}</p>
+            </div>
+            <div className="rounded-full bg-accent-soft p-3 text-accent">
+              <Receipt size={22} weight="duotone" aria-hidden />
+            </div>
+          </CardContent>
+        </Card>
       </section>
 
       {podeCobrar ? (
-        <section className="space-y-4 rounded-xl border p-4">
-          <div>
-            <h2 className="font-semibold">{t("Nova cobrança")}</h2>
-            <p className="text-sm text-text-muted">
-              {t("Avulsa, parcelada ou recorrente. O recebimento entra no financeiro somente após o webhook do Asaas.")}
-            </p>
-          </div>
+        <Card className="overflow-visible">
+          <CardHeader className="border-b border-border bg-surface-elevated/50">
+            <div className="flex items-start gap-3">
+              <div className="rounded-full bg-accent-soft p-2.5 text-accent">
+                <Users size={20} weight="duotone" aria-hidden />
+              </div>
+              <div>
+                <CardTitle>{t("Nova cobrança")}</CardTitle>
+                <CardDescription>
+                  {t("Avulsa, parcelada ou recorrente. O recebimento entra no financeiro somente após o webhook do Asaas.")}
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-5 p-5">
 
           {(contas.data?.length ?? 0) === 0 ? (
             <div className="rounded-lg border border-warning/40 bg-warning-bg p-3 text-sm">
@@ -493,24 +574,50 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
           <div className="space-y-2">
             <label className="block text-sm font-medium">{t("Contato do CRM")}</label>
             {contactId && contatoSelecionado.data ? (
-              <div className="flex flex-wrap items-center gap-2 rounded-lg border p-3">
-                <Link
-                  href={`/app/contacts/${contactId}`}
-                  className="font-medium underline-offset-4 hover:underline"
-                >
-                  {rotuloContato(contatoSelecionado.data)}
-                </Link>
-                <span className="text-sm text-text-muted">
-                  {contatoSelecionado.data.phone_number ?? ""}
-                </span>
-                <Button variant="ghost" onClick={limparContato}>
-                  {t("Trocar contato")}
-                </Button>
+              <div className="rounded-lg border border-border bg-surface-elevated/40 p-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div className="rounded-full bg-accent-soft p-2.5 text-accent">
+                      <Users size={20} weight="duotone" aria-hidden />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold">{rotuloContato(contatoSelecionado.data)}</p>
+                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-text-muted">
+                        {contatoSelecionado.data.phone_number ? (
+                          <span className="inline-flex items-center gap-1">
+                            <WhatsappLogo size={15} aria-hidden />
+                            {contatoSelecionado.data.phone_number}
+                          </span>
+                        ) : null}
+                        {contatoSelecionado.data.email ? <span>{contatoSelecionado.data.email}</span> : null}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/app/contacts/${contactId}`}>
+                        <ArrowSquareOut size={15} aria-hidden />
+                        {t("Abrir contato")}
+                      </Link>
+                    </Button>
+                    {contatoSelecionado.data.conversa?.id ? (
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/app/inbox?id=${contatoSelecionado.data.conversa.id}`}>
+                          <ChatCircle size={15} aria-hidden />
+                          {t("Abrir conversa no Inbox")}
+                        </Link>
+                      </Button>
+                    ) : null}
+                    <Button variant="ghost" size="sm" onClick={limparContato}>
+                      {t("Trocar contato")}
+                    </Button>
+                  </div>
+                </div>
               </div>
             ) : (
-              <div className="relative max-w-xl">
-                <input
-                  className="min-h-11 w-full rounded-md border p-2"
+              <div className="relative max-w-2xl">
+                <Input
+                  className="h-11"
                   value={buscaContato}
                   onChange={(e) => setBuscaContato(e.target.value)}
                   placeholder={t("Busque pelo nome, telefone ou e-mail")}
@@ -586,18 +693,30 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
                 placeholder={t("Opcional")}
               />
             </label>
-            <label className="space-y-1 text-sm">
+            <div className="space-y-1.5 text-sm md:col-span-2 lg:col-span-3">
               <span>{t("Tipo de cobrança")}</span>
-              <select
-                className="min-h-11 w-full rounded-md border p-2"
-                value={modo}
-                onChange={(e) => setModo(e.target.value as Modo)}
-              >
-                <option value="single">{t("Avulsa")}</option>
-                <option value="installment">{t("Parcelada")}</option>
-                <option value="subscription">{t("Recorrente / mensalidade")}</option>
-              </select>
-            </label>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {([
+                  ["single", t("Avulsa"), t("Uma cobrança com vencimento definido.")],
+                  ["installment", t("Parcelada"), t("Divida o valor total em parcelas.")],
+                  ["subscription", t("Recorrente / mensalidade"), t("Gere cobranças automaticamente por período.")],
+                ] as const).map(([value, label, help]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setModo(value)}
+                    className={
+                      modo === value
+                        ? "rounded-lg border border-accent bg-accent-soft p-3 text-left shadow-xs"
+                        : "rounded-lg border border-border bg-surface p-3 text-left transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                    }
+                  >
+                    <span className="block font-medium text-text">{label}</span>
+                    <span className="mt-1 block text-xs leading-relaxed text-text-muted">{help}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
             <label className="space-y-1 text-sm">
               <span>{modo === "installment" ? t("Valor total") : t("Valor")}</span>
               <input
@@ -730,7 +849,8 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
               </span>
             ) : null}
           </div>
-        </section>
+          </CardContent>
+        </Card>
       ) : (
         <section className="rounded-xl border p-4 text-sm text-text-muted">
           {t("Seu perfil pode consultar cobranças, mas não criar novas.")}
@@ -836,9 +956,20 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
         </div>
 
         {mensagemAcao ? (
-          <p role="status" className="text-sm text-text-muted">
-            {mensagemAcao}
-          </p>
+          <div
+            role="status"
+            className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-success/20 bg-success-bg px-3 py-2 text-sm text-success-fg"
+          >
+            <span>{mensagemAcao}</span>
+            {conversaEnviadaId ? (
+              <Button asChild variant="ghost" size="sm">
+                <Link href={`/app/inbox?id=${conversaEnviadaId}`}>
+                  <ChatCircle size={15} aria-hidden />
+                  {t("Abrir conversa no Inbox")}
+                </Link>
+              </Button>
+            ) : null}
+          </div>
         ) : null}
 
         {cobrancas.isLoading ? <p className="text-sm">{t("Carregando…")}</p> : null}
@@ -847,69 +978,114 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
           <p className="text-sm text-text-muted">{t("Nenhuma cobrança neste filtro.")}</p>
         ) : null}
 
-        <div className="space-y-2">
-          {filtradas.map((cobranca) => (
-            <article
-              key={cobranca.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
-            >
-              <div className="min-w-0">
-                <p className="font-medium">
-                  {dinheiro(Number(cobranca.amount_cents))} · {t(TIPO[cobranca.billing_type])}
-                  {cobranca.installment_number ? <> · {t("parcela")} {cobranca.installment_number}</> : null}
-                </p>
-                <p className="text-sm text-text-muted">
-                  {cobranca.description || t("Sem descrição")} · {t("vence em")} {cobranca.due_date}
-                </p>
-                <div className="mt-1 flex flex-wrap gap-2 text-xs">
-                  {cobranca.contact_id ? (
-                    <Link className="underline" href={`/app/contacts/${cobranca.contact_id}`}>
-                      {t("Abrir contato")}
-                    </Link>
-                  ) : null}
-                  {cobranca.installment_id ? <span>{t("Parcelamento")}</span> : null}
-                  {cobranca.subscription_id ? <span>{t("Recorrente")}</span> : null}
-                  {cobranca.needs_reconciliation ? (
-                    <span className="text-warning-fg">{t("Precisa de conferência manual")}</span>
-                  ) : null}
-                </div>
-              </div>
+        <div className="space-y-3">
+          {filtradas.map((cobranca) => {
+            const cliente = cobranca.contact;
+            return (
+              <article
+                key={cobranca.id}
+                className="rounded-lg border border-border bg-surface p-4 shadow-xs transition-colors hover:border-border-strong"
+              >
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-lg font-semibold tabular-nums">
+                        {dinheiro(Number(cobranca.amount_cents))}
+                      </p>
+                      <Badge variant={statusVariant(cobranca.status)}>
+                        {STATUS[cobranca.status] ? t(STATUS[cobranca.status]!) : cobranca.status}
+                      </Badge>
+                      <Badge variant="neutral">{t(TIPO[cobranca.billing_type])}</Badge>
+                      {cobranca.installment_number ? (
+                        <Badge variant="neutral">{t("parcela")} {cobranca.installment_number}</Badge>
+                      ) : null}
+                    </div>
 
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                <span className="text-sm font-medium">
-                  {STATUS[cobranca.status] ? t(STATUS[cobranca.status]!) : cobranca.status}
-                </span>
-                {cobranca.invoice_url ? (
-                  <a
-                    href={cobranca.invoice_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-md border px-3 py-2 text-xs font-medium"
-                  >
-                    {t("Segunda via")}
-                  </a>
-                ) : null}
-                {cobranca.billing_type === "PIX" && cobranca.asaas_payment_id ? (
-                  <Button
-                    variant="ghost"
-                    disabled={copiarPixExistente.isPending}
-                    onClick={() => copiarPixExistente.mutate(cobranca.id)}
-                  >
-                    {t("Copiar Pix")}
-                  </Button>
-                ) : null}
-                {cobranca.contact_id && cobranca.invoice_url && podeCobrar ? (
-                  <Button
-                    variant="ghost"
-                    disabled={enviarWhatsApp.isPending}
-                    onClick={() => enviarWhatsApp.mutate(cobranca.id)}
-                  >
-                    {t("Enviar WhatsApp")}
-                  </Button>
-                ) : null}
-              </div>
-            </article>
-          ))}
+                    <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
+                          {t("Cliente")}
+                        </p>
+                        {cliente && cobranca.contact_id ? (
+                          <div className="mt-1">
+                            <Link
+                              href={`/app/contacts/${cobranca.contact_id}`}
+                              className="font-medium text-text underline-offset-4 hover:text-accent hover:underline"
+                            >
+                              {rotuloContato(cliente)}
+                            </Link>
+                            <p className="mt-0.5 text-sm text-text-muted">
+                              {[cliente.phone_number, cliente.email].filter(Boolean).join(" · ")}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="mt-1 text-sm text-text-muted">{t("Cobrança sem contato vinculado")}</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
+                          {t("Detalhes")}
+                        </p>
+                        <p className="mt-1 text-sm">
+                          {cobranca.description || t("Sem descrição")}
+                        </p>
+                        <p className="mt-0.5 text-sm text-text-muted">
+                          {t("Vencimento")}: {dataBr(cobranca.due_date)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-text-muted">
+                      {cobranca.installment_id ? <span>{t("Parcelamento")}</span> : null}
+                      {cobranca.subscription_id ? <span>{t("Recorrente")}</span> : null}
+                      {cobranca.needs_reconciliation ? (
+                        <span className="font-medium text-warning-fg">{t("Precisa de conferência manual")}</span>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="flex shrink-0 flex-wrap gap-2 xl:max-w-sm xl:justify-end">
+                    {cobranca.contact_id ? (
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/app/contacts/${cobranca.contact_id}`}>
+                          <Users size={15} aria-hidden />
+                          {t("Cliente")}
+                        </Link>
+                      </Button>
+                    ) : null}
+                    {cobranca.invoice_url ? (
+                      <Button asChild variant="outline" size="sm">
+                        <a href={cobranca.invoice_url} target="_blank" rel="noreferrer">
+                          <ArrowSquareOut size={15} aria-hidden />
+                          {t("Segunda via")}
+                        </a>
+                      </Button>
+                    ) : null}
+                    {cobranca.billing_type === "PIX" && cobranca.asaas_payment_id ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={copiarPixExistente.isPending}
+                        onClick={() => copiarPixExistente.mutate(cobranca.id)}
+                      >
+                        {t("Copiar Pix")}
+                      </Button>
+                    ) : null}
+                    {cobranca.contact_id && cobranca.invoice_url && podeCobrar ? (
+                      <Button
+                        size="sm"
+                        disabled={enviarWhatsApp.isPending}
+                        onClick={() => enviarWhatsApp.mutate(cobranca.id)}
+                      >
+                        <WhatsappLogo size={15} aria-hidden />
+                        {t("Enviar WhatsApp")}
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </section>
 
@@ -928,18 +1104,43 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
           {(assinaturas.data ?? []).map((assinatura) => (
             <div
               key={assinatura.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
+              className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 md:flex-row md:items-center md:justify-between"
             >
-              <div>
-                <p className="font-medium">
-                  {assinatura.description || t("Mensalidade")} · {dinheiro(Number(assinatura.amount_cents))}
-                </p>
-                <p className="text-sm text-text-muted">
-                  {t(CICLO[assinatura.cycle])} · {t("próximo vencimento")} {assinatura.next_due_date}
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold">
+                    {assinatura.description || t("Mensalidade")} · {dinheiro(Number(assinatura.amount_cents))}
+                  </p>
+                  <Badge variant={assinatura.status === "ACTIVE" ? "success" : "neutral"}>
+                    {assinatura.status}
+                  </Badge>
+                </div>
+                {assinatura.contact && assinatura.contact_id ? (
+                  <p className="mt-1 text-sm">
+                    <Link
+                      href={`/app/contacts/${assinatura.contact_id}`}
+                      className="font-medium underline-offset-4 hover:text-accent hover:underline"
+                    >
+                      {rotuloContato(assinatura.contact)}
+                    </Link>
+                    {assinatura.contact.phone_number ? (
+                      <span className="text-text-muted"> · {assinatura.contact.phone_number}</span>
+                    ) : null}
+                  </p>
+                ) : null}
+                <p className="mt-1 text-sm text-text-muted">
+                  {t(CICLO[assinatura.cycle])} · {t("próximo vencimento")} {dataBr(assinatura.next_due_date)}
                   {assinatura.max_payments ? <> · {t("até")} {assinatura.max_payments} {t("cobranças")}</> : null}
                 </p>
               </div>
-              <span className="text-sm font-medium">{assinatura.status}</span>
+              {assinatura.contact_id ? (
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/app/contacts/${assinatura.contact_id}`}>
+                    <Users size={15} aria-hidden />
+                    {t("Ver cliente")}
+                  </Link>
+                </Button>
+              ) : null}
             </div>
           ))}
         </div>
