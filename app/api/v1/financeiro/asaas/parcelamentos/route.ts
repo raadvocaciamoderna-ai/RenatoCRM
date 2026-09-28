@@ -107,10 +107,13 @@ export async function POST(req: NextRequest): Promise<Response> {
       totalValue: parsed.data.total_value_cents / 100,
       dueDate: parsed.data.due_date,
       ...(parsed.data.description ? { description: parsed.data.description } : {}),
-      paymentExternalReference,
+      externalReference: paymentExternalReference,
     });
-    remoteId = created.id;
-    remoteInstallment = created;
+    remoteId =
+      typeof created.installment === "string" && created.installment
+        ? created.installment
+        : null;
+    remoteInstallment = remoteId ? { id: remoteId } : null;
   } catch (error) {
     if (error instanceof AsaasApiError && error.status >= 500) {
       try {
