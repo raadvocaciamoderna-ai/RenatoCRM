@@ -15,6 +15,13 @@ const nextConfig: NextConfig = {
   // desligado porque Next 16.3 + adapter + standalone quebra o onBuildComplete
   // com ENOENT next-server.js.nft.json (#96646).
   output: process.env.VERCEL ? undefined : "standalone",
+  // O build Docker da VPS não repete o typecheck: ele já é um gate separado no
+  // CI (`pnpm typecheck`). Isso reduz o pico de memória no EasyPanel sem
+  // desativar a verificação de tipos do projeto. Fora do Docker, o Next segue
+  // validando tipos normalmente.
+  typescript: {
+    ignoreBuildErrors: process.env.NEXT_BUILD_SKIP_TYPECHECK === "1",
+  },
   /**
    * O `standalone` copia SÓ o que o file tracing detecta — e ele não detecta
    * tudo de `@swc/helpers`.
