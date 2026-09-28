@@ -128,6 +128,7 @@ describe("sidebarGroups", () => {
       "/app/kanban",
       "/app/contacts",
       "/app/tasks",
+      "/app/pagamentos",
       // "/app/calls" (telefonia por SIP) NÃO entra aqui, e a ausência é a
       // decisão: o módulo é OPCIONAL e nasce desligado (doc 27), então a porta
       // no sidebar custaria um item a TODA instalação — e o vigésimo item é o
@@ -179,6 +180,7 @@ describe("hubSections", () => {
       "/app/tasks",
       "/app/calls",
       "/app/comandas",
+      "/app/pagamentos",
       "/app/products",
       "/app/settings/tenant/pipelines",
     ]);
