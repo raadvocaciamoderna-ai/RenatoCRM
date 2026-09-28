@@ -31,7 +31,7 @@ export async function GET(req: NextRequest): Promise<Response> {
   const { data, error } = await supabase
     .from("asaas_payments")
     .select(
-      "id, contact_id, asaas_payment_id, installment_id, subscription_id, installment_number, billing_type, amount_cents, due_date, description, status, invoice_url, needs_reconciliation, created_at",
+      "id, contact_id, asaas_payment_id, installment_id, subscription_id, installment_number, billing_type, amount_cents, due_date, description, status, invoice_url, needs_reconciliation, created_at, contact:contacts!asaas_payments_contact_id_fkey(id, name, display_name, phone_number, email)",
     )
     .eq("organization_id", authz.org.orgId)
     .order("created_at", { ascending: false })
