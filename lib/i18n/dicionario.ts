@@ -81,6 +81,7 @@ export const DICIONARIO: Traducoes = {
   "Ex.: Honorários, consulta, mensalidade...": { es: "Ej.: Honorarios, consulta, mensualidad..." },
   "Ex.: Maria da Silva": { es: "Ej.: María da Silva" },
   "Falha ao criar": { es: "Error al crear" },
+  Falhas: { es: "Errores" },
   "Filtrar por forma de pagamento": { es: "Filtrar por forma de pago" },
   "Forma de cobrança": { es: "Forma de cobro" },
   "Gerar cobrança": { es: "Generar cobro" },
