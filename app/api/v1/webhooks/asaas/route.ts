@@ -311,9 +311,17 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   try {
     if (event.event === "PAYMENT_RECEIVED") {
+      // O payload do Asaas traz a data efetiva do pagamento. Usar o instante
+      // em que o webhook chegou distorcia competência/caixa quando a entrega
+      // fosse atrasada ou reprocessada.
+      const paidDate = event.payment.paymentDate ?? event.payment.clientPaymentDate;
+      const paidAt = paidDate && /^\\d{4}-\\d{2}-\\d{2}$/.test(paidDate)
+        ? `${paidDate}T00:00:00.000Z`
+        : new Date().toISOString();
+
       const { data, error } = await admin.rpc("fn_asaas_payment_received", {
         p_local_payment: localPayment.id,
-        p_paid_at: new Date().toISOString(),
+        p_paid_at: paidAt,
       });
       if (error) throw new Error(error.message);
 
