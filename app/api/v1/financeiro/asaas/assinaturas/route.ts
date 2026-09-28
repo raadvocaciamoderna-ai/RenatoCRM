@@ -4,7 +4,9 @@ import type { NextRequest } from "next/server";
 
 import { ok, fail } from "@/lib/api/wrappers";
 import {
+  AsaasApiError,
   createAsaasSubscription,
+  findAsaasSubscriptionByExternalReference,
   getAsaasPixQrCode,
   listAsaasSubscriptionPayments,
 } from "@/lib/asaas/client";
@@ -105,7 +107,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const localSubscriptionId = randomUUID();
   const externalReference = `crm-subscription:${localSubscriptionId}`;
 
-  let subscription;
+  let subscription: Awaited<ReturnType<typeof createAsaasSubscription>> | null = null;
   try {
     subscription = await createAsaasSubscription({
       customer: parsed.data.customer_id,
@@ -118,8 +120,21 @@ export async function POST(req: NextRequest): Promise<Response> {
       externalReference,
     });
   } catch (error) {
-    const mapped = describeAsaasError(error);
-    return fail(mapped.code, mapped.message, mapped.status, { requestId });
+    // Em timeout/5xx, a assinatura pode ter sido criada remotamente. Antes de
+    // permitir uma nova tentativa, reconcilia pela externalReference para não
+    // duplicar mensalidades no Asaas.
+    if (error instanceof AsaasApiError && error.status >= 500) {
+      try {
+        subscription = await findAsaasSubscriptionByExternalReference(externalReference);
+      } catch {
+        subscription = null;
+      }
+    }
+
+    if (!subscription) {
+      const mapped = describeAsaasError(error);
+      return fail(mapped.code, mapped.message, mapped.status, { requestId });
+    }
   }
 
   const { error: subscriptionError } = await supabase.from("asaas_subscriptions").insert({
