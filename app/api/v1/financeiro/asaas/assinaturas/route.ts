@@ -31,7 +31,7 @@ export async function GET(req: NextRequest): Promise<Response> {
   const { data, error } = await supabase
     .from("asaas_subscriptions")
     .select(
-      "id, contact_id, asaas_subscription_id, billing_type, amount_cents, cycle, next_due_date, description, max_payments, status, created_at",
+      "id, contact_id, asaas_subscription_id, billing_type, amount_cents, cycle, next_due_date, description, max_payments, status, created_at, contact:contacts!asaas_subscriptions_contact_id_fkey(id, name, display_name, phone_number, email)",
     )
     .eq("organization_id", authz.org.orgId)
     .order("created_at", { ascending: false })
