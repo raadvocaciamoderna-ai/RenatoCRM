@@ -24,6 +24,7 @@ export function AsaasIntegracao({ podeEditar }: { podeEditar: boolean }) {
   const t = useT();
   const qc = useQueryClient();
   const [email, setEmail] = useState("");
+  const [testeMensagem, setTesteMensagem] = useState<string | null>(null);
 
   const status = useQuery({
     queryKey: ["financeiro", "asaas", "status"],
@@ -39,6 +40,29 @@ export function AsaasIntegracao({ podeEditar }: { podeEditar: boolean }) {
     },
     onError: showApiError,
   });
+
+  async function testarConexao() {
+    setTesteMensagem(null);
+
+    const resultado = await status.refetch();
+    const dadosAtualizados = resultado.data;
+
+    if (resultado.isError) {
+      setTesteMensagem(t("Não foi possível concluir o teste de conexão."));
+      return;
+    }
+
+    if (dadosAtualizados?.connected) {
+      setTesteMensagem(t("Conexão com o Asaas testada com sucesso."));
+      return;
+    }
+
+    setTesteMensagem(
+      dadosAtualizados?.error
+        ? t(`Teste concluído: ${dadosAtualizados.error}`)
+        : t("Teste concluído, mas a API do Asaas não respondeu como conectada."),
+    );
+  }
 
   const dados = status.data;
   const ambiente =
@@ -134,14 +158,27 @@ export function AsaasIntegracao({ podeEditar }: { podeEditar: boolean }) {
         </div>
       ) : null}
 
-      <Button
-        variant="ghost"
-        className="min-h-11"
-        disabled={status.isFetching}
-        onClick={() => void status.refetch()}
-      >
-        {t("Testar conexão")}
-      </Button>
+      <div className="space-y-2">
+        <Button
+          variant="ghost"
+          className="min-h-11"
+          disabled={status.isFetching}
+          onClick={() => void testarConexao()}
+        >
+          {status.isFetching ? t("Testando…") : t("Testar conexão")}
+        </Button>
+
+        {testeMensagem ? (
+          <p
+            className="text-sm text-text-muted"
+            role="status"
+            aria-live="polite"
+            data-testid="asaas-teste-conexao-resultado"
+          >
+            {testeMensagem}
+          </p>
+        ) : null}
+      </div>
     </section>
   );
 }
