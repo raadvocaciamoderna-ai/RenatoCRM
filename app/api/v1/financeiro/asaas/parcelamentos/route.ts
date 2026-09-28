@@ -68,6 +68,21 @@ export async function POST(req: NextRequest): Promise<Response> {
   }
 
   const supabase = await createClient();
+
+  if (parsed.data.contact_id) {
+    const { data: contact, error: contactError } = await supabase
+      .from("contacts")
+      .select("id")
+      .eq("organization_id", authz.org.orgId)
+      .eq("id", parsed.data.contact_id)
+      .maybeSingle();
+    if (contactError) return fail("internal_error", contactError.message, 500, { requestId });
+    if (!contact) {
+      return fail("validation_failed", "Contato não pertence a esta organização.", 422, {
+        requestId,
+      });
+    }
+  }
   const catalogo = await validarCatalogo(
     supabase,
     authz.org.orgId,
