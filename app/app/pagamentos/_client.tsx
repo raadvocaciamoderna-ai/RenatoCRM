@@ -532,13 +532,21 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
       </section>
 
       {podeCobrar ? (
-        <section className="space-y-4 rounded-xl border p-4">
-          <div>
-            <h2 className="font-semibold">{t("Nova cobrança")}</h2>
-            <p className="text-sm text-text-muted">
-              {t("Avulsa, parcelada ou recorrente. O recebimento entra no financeiro somente após o webhook do Asaas.")}
-            </p>
-          </div>
+        <Card className="overflow-visible">
+          <CardHeader className="border-b border-border bg-surface-elevated/50">
+            <div className="flex items-start gap-3">
+              <div className="rounded-full bg-accent-soft p-2.5 text-accent">
+                <Users size={20} weight="duotone" aria-hidden />
+              </div>
+              <div>
+                <CardTitle>{t("Nova cobrança")}</CardTitle>
+                <CardDescription>
+                  {t("Avulsa, parcelada ou recorrente. O recebimento entra no financeiro somente após o webhook do Asaas.")}
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-5 p-5">
 
           {(contas.data?.length ?? 0) === 0 ? (
             <div className="rounded-lg border border-warning/40 bg-warning-bg p-3 text-sm">
@@ -552,24 +560,50 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
           <div className="space-y-2">
             <label className="block text-sm font-medium">{t("Contato do CRM")}</label>
             {contactId && contatoSelecionado.data ? (
-              <div className="flex flex-wrap items-center gap-2 rounded-lg border p-3">
-                <Link
-                  href={`/app/contacts/${contactId}`}
-                  className="font-medium underline-offset-4 hover:underline"
-                >
-                  {rotuloContato(contatoSelecionado.data)}
-                </Link>
-                <span className="text-sm text-text-muted">
-                  {contatoSelecionado.data.phone_number ?? ""}
-                </span>
-                <Button variant="ghost" onClick={limparContato}>
-                  {t("Trocar contato")}
-                </Button>
+              <div className="rounded-lg border border-border bg-surface-elevated/40 p-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div className="rounded-full bg-accent-soft p-2.5 text-accent">
+                      <Users size={20} weight="duotone" aria-hidden />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold">{rotuloContato(contatoSelecionado.data)}</p>
+                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-text-muted">
+                        {contatoSelecionado.data.phone_number ? (
+                          <span className="inline-flex items-center gap-1">
+                            <WhatsappLogo size={15} aria-hidden />
+                            {contatoSelecionado.data.phone_number}
+                          </span>
+                        ) : null}
+                        {contatoSelecionado.data.email ? <span>{contatoSelecionado.data.email}</span> : null}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/app/contacts/${contactId}`}>
+                        <ArrowSquareOut size={15} aria-hidden />
+                        {t("Abrir contato")}
+                      </Link>
+                    </Button>
+                    {contatoSelecionado.data.conversa?.id ? (
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/app/inbox?id=${contatoSelecionado.data.conversa.id}`}>
+                          <ChatCircle size={15} aria-hidden />
+                          {t("Abrir conversa no Inbox")}
+                        </Link>
+                      </Button>
+                    ) : null}
+                    <Button variant="ghost" size="sm" onClick={limparContato}>
+                      {t("Trocar contato")}
+                    </Button>
+                  </div>
+                </div>
               </div>
             ) : (
-              <div className="relative max-w-xl">
-                <input
-                  className="min-h-11 w-full rounded-md border p-2"
+              <div className="relative max-w-2xl">
+                <Input
+                  className="h-11"
                   value={buscaContato}
                   onChange={(e) => setBuscaContato(e.target.value)}
                   placeholder={t("Busque pelo nome, telefone ou e-mail")}
@@ -789,7 +823,8 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
               </span>
             ) : null}
           </div>
-        </section>
+          </CardContent>
+        </Card>
       ) : (
         <section className="rounded-xl border p-4 text-sm text-text-muted">
           {t("Seu perfil pode consultar cobranças, mas não criar novas.")}
