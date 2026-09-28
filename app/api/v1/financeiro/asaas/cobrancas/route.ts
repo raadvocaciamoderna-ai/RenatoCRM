@@ -19,6 +19,28 @@ import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+export async function GET(req: NextRequest): Promise<Response> {
+  const requestId = randomUUID();
+  const authz = await requireRole("viewer", { requestId, resource: "financeiro" });
+  if (!authz.ok) return authz.response;
+
+  const rawLimit = Number(new URL(req.url).searchParams.get("limit") ?? "50");
+  const limit = Number.isFinite(rawLimit) ? Math.min(100, Math.max(1, Math.trunc(rawLimit))) : 50;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("asaas_payments")
+    .select(
+      "id, asaas_payment_id, billing_type, amount_cents, due_date, description, status, invoice_url, needs_reconciliation, created_at",
+    )
+    .eq("organization_id", authz.org.orgId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) return fail("internal_error", error.message, 500, { requestId });
+  return ok(data ?? [], { requestId });
+}
+
 export async function POST(req: NextRequest): Promise<Response> {
   const requestId = randomUUID();
   const supportDenied = await requireSupportWrite();
