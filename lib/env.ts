@@ -416,6 +416,17 @@ const schema = z.object({
     .default("false")
     .transform((v) => v === "true"),
 
+  // Asaas — integração financeira opcional. Sandbox é o padrão seguro para
+  // instalações que ainda não promoveram a integração para produção.
+  // A chave e o token do webhook são sempre server-side e nunca devem usar
+  // prefixo NEXT_PUBLIC_.
+  ASAAS_API_KEY: z.string().optional().default(""),
+  ASAAS_API_BASE_URL: z
+    .string()
+    .optional()
+    .default("https://api-sandbox.asaas.com/v3"),
+  ASAAS_WEBHOOK_TOKEN: z.string().optional().default(""),
+
   // App URLs
   NEXT_PUBLIC_APP_URL: z
     .string()
