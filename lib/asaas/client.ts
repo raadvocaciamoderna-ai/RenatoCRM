@@ -34,6 +34,35 @@ export type AsaasPayment = {
   invoiceUrl?: string | null;
   paymentDate?: string | null;
   clientPaymentDate?: string | null;
+  installment?: string | null;
+  subscription?: string | null;
+  installmentNumber?: number | null;
+  [key: string]: unknown;
+};
+
+export type AsaasInstallment = {
+  object?: "installment";
+  id: string;
+  customer?: string;
+  value?: number;
+  netValue?: number;
+  installmentCount?: number;
+  billingType?: string;
+  status?: string;
+  [key: string]: unknown;
+};
+
+export type AsaasSubscription = {
+  object?: "subscription";
+  id: string;
+  customer?: string;
+  billingType?: string;
+  value?: number;
+  nextDueDate?: string;
+  cycle?: string;
+  description?: string | null;
+  status?: string;
+  externalReference?: string | null;
   [key: string]: unknown;
 };
 
@@ -225,6 +254,60 @@ export async function createAsaasPayment(input: {
     method: "POST",
     body: JSON.stringify(input),
   });
+}
+
+export async function createAsaasInstallment(input: {
+  customer: string;
+  billingType: "UNDEFINED" | "BOLETO" | "CREDIT_CARD" | "PIX";
+  installmentCount: number;
+  totalValue: number;
+  dueDate: string;
+  description?: string;
+  paymentExternalReference?: string;
+}): Promise<AsaasInstallment> {
+  return asaasRequest<AsaasInstallment>("/installments", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function listAsaasInstallmentPayments(
+  installmentId: string,
+): Promise<AsaasPayment[]> {
+  const result = await asaasRequest<AsaasList<AsaasPayment>>(
+    `/installments/${encodeURIComponent(installmentId)}/payments?limit=100&offset=0`,
+  );
+  return result.data ?? [];
+}
+
+export async function createAsaasSubscription(input: {
+  customer: string;
+  billingType: "UNDEFINED" | "BOLETO" | "CREDIT_CARD" | "PIX";
+  value: number;
+  nextDueDate: string;
+  cycle: "WEEKLY" | "BIWEEKLY" | "MONTHLY" | "BIMONTHLY" | "QUARTERLY" | "SEMIANNUALLY" | "YEARLY";
+  description?: string;
+  maxPayments?: number;
+  externalReference: string;
+}): Promise<AsaasSubscription> {
+  return asaasRequest<AsaasSubscription>("/subscriptions", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function listAsaasSubscriptionPayments(
+  subscriptionId: string,
+): Promise<AsaasPayment[]> {
+  const params = new URLSearchParams({
+    subscription: subscriptionId,
+    limit: "100",
+    offset: "0",
+  });
+  const result = await asaasRequest<AsaasList<AsaasPayment>>(
+    `/payments?${params.toString()}`,
+  );
+  return result.data ?? [];
 }
 
 export async function findAsaasPaymentByExternalReference(
