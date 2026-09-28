@@ -281,7 +281,9 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
       (Number.isInteger(numeroParcelas) && numeroParcelas >= 2 && numeroParcelas <= 24)) &&
     (modo !== "subscription" ||
       numeroMaxPayments === undefined ||
-      (Number.isInteger(numeroMaxPayments) && numeroMaxPayments >= 1));
+      (Number.isInteger(numeroMaxPayments) &&
+        numeroMaxPayments >= 1 &&
+        numeroMaxPayments <= 240));
 
   const criar = useMutation({
     mutationFn: async (): Promise<ResultadoCriacao> => {
@@ -665,7 +667,10 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
                     className="min-h-11 w-full rounded-md border p-2"
                     value={maxPayments}
                     onChange={(e) => setMaxPayments(e.target.value)}
+                    type="number"
                     inputMode="numeric"
+                    min={1}
+                    max={240}
                     placeholder={t("Vazio = sem limite")}
                   />
                 </label>
