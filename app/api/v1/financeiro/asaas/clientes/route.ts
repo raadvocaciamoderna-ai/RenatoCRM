@@ -38,21 +38,28 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supabase = await createClient();
 
   try {
+    let linkedRow: { id: string; asaas_customer_id: string } | null = null;
+
     if (parsed.data.contact_id) {
-      const { data: linked } = await supabase
+      const { data: linked, error: linkedError } = await supabase
         .from("asaas_customers")
-        .select("asaas_customer_id")
+        .select("id, asaas_customer_id")
         .eq("organization_id", authz.org.orgId)
         .eq("contact_id", parsed.data.contact_id)
         .maybeSingle();
 
-      if (linked?.asaas_customer_id) {
+      if (linkedError) {
+        return fail("internal_error", linkedError.message, 500, { requestId });
+      }
+
+      linkedRow = linked as typeof linkedRow;
+      if (linkedRow?.asaas_customer_id) {
         try {
-          const customer = await getAsaasCustomer(linked.asaas_customer_id as string);
+          const customer = await getAsaasCustomer(linkedRow.asaas_customer_id);
           return ok({ customer, created: false, source: "local_link" }, { requestId });
         } catch {
           // O vínculo pode ter ficado órfão após exclusão manual no Asaas.
-          // Nesse caso seguimos pela busca por CPF/CNPJ e reatamos abaixo.
+          // Guardamos o ID local para reatar a MESMA linha abaixo.
         }
       }
     }
@@ -74,17 +81,24 @@ export async function POST(req: NextRequest): Promise<Response> {
     }
 
     if (parsed.data.contact_id) {
-      const { error } = await supabase.from("asaas_customers").upsert(
-        {
-          organization_id: authz.org.orgId,
-          contact_id: parsed.data.contact_id,
-          asaas_customer_id: customer.id,
-          created_by_user_id: authz.user.id,
-        },
-        { onConflict: "organization_id,asaas_customer_id" },
-      );
+      const mutation = linkedRow
+        ? supabase
+            .from("asaas_customers")
+            .update({
+              asaas_customer_id: customer.id,
+              created_by_user_id: authz.user.id,
+            })
+            .eq("id", linkedRow.id)
+            .eq("organization_id", authz.org.orgId)
+        : supabase.from("asaas_customers").insert({
+            organization_id: authz.org.orgId,
+            contact_id: parsed.data.contact_id,
+            asaas_customer_id: customer.id,
+            created_by_user_id: authz.user.id,
+          });
 
-      if (error && error.code !== "23505") {
+      const { error } = await mutation;
+      if (error) {
         return fail("internal_error", error.message, 500, { requestId });
       }
     }
