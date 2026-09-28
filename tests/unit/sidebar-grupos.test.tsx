@@ -81,6 +81,15 @@ describe("Sidebar agrupado", () => {
     expect(screen.getByRole("link", { name: "Funis" })).toHaveAttribute("href", "/app/kanban");
   });
 
+  it("expõe Pagamentos como acesso diário no CRM", () => {
+    comoPapel("admin");
+    render(<Sidebar collapsed={false} />);
+    expect(screen.getByRole("link", { name: "Pagamentos" })).toHaveAttribute(
+      "href",
+      "/app/pagamentos",
+    );
+  });
+
   it("desenterra Audit Log — e Nuvemshop ficou de fora, por escolha", () => {
     comoPapel("admin");
     render(<Sidebar collapsed={false} />);
