@@ -2,18 +2,38 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import { showApiError } from "@/components/feedback/ApiErrorToast";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/hooks/i18n/useT";
 import { apiClient } from "@/lib/api/client";
 
 type Conta = { id: string; name: string };
 type Plano = { id: string; name: string; direction: "in" | "out" };
 
+type ContactSummary = {
+  id: string;
+  name: string | null;
+  display_name: string | null;
+  email: string | null;
+  phone_number: string | null;
+};
+
+type ContactDetail = ContactSummary & {
+  cpf_decrypted?: string | null;
+  cpf_available?: boolean;
+  cpf_decrypt_denied?: boolean;
+};
+
 type Cobranca = {
   id: string;
+  contact_id: string | null;
   asaas_payment_id: string | null;
+  installment_id: string | null;
+  subscription_id: string | null;
+  installment_number: number | null;
   billing_type: "UNDEFINED" | "BOLETO" | "CREDIT_CARD" | "PIX";
   amount_cents: number;
   due_date: string;
@@ -24,29 +44,73 @@ type Cobranca = {
   created_at: string;
 };
 
-type Criacao = {
-  local_payment_id: string;
-  payment: {
-    id: string;
-    status: string;
-    value: number;
-    dueDate: string;
-    invoiceUrl?: string | null;
-  };
-  pix: {
-    encodedImage: string;
-    payload: string;
-    expirationDate: string;
-  } | null;
-  pix_error: string | null;
+type Assinatura = {
+  id: string;
+  contact_id: string | null;
+  asaas_subscription_id: string;
+  billing_type: Cobranca["billing_type"];
+  amount_cents: number;
+  cycle: Cycle;
+  next_due_date: string;
+  description: string | null;
+  max_payments: number | null;
+  status: string;
+  created_at: string;
 };
+
+type Pix = {
+  encodedImage: string;
+  payload: string;
+  expirationDate: string;
+};
+
+type PagamentoRemoto = {
+  id: string;
+  status: string;
+  value: number;
+  dueDate: string;
+  invoiceUrl?: string | null;
+};
+
+type ResultadoCriacao =
+  | {
+      kind: "single";
+      title: string;
+      payment: PagamentoRemoto;
+      pix: Pix | null;
+      pix_error: string | null;
+    }
+  | {
+      kind: "installment";
+      title: string;
+      payment: PagamentoRemoto | null;
+      pix: Pix | null;
+      count: number;
+    }
+  | {
+      kind: "subscription";
+      title: string;
+      payment: PagamentoRemoto | null;
+      pix: Pix | null;
+      subscriptionId: string;
+    };
+
+type Modo = "single" | "installment" | "subscription";
+type Cycle =
+  | "WEEKLY"
+  | "BIWEEKLY"
+  | "MONTHLY"
+  | "BIMONTHLY"
+  | "QUARTERLY"
+  | "SEMIANNUALLY"
+  | "YEARLY";
 
 const STATUS: Record<string, string> = {
   CREATING: "Criando",
   CREATE_FAILED: "Falha ao criar",
   PENDING: "Pendente",
   CONFIRMED: "Confirmado",
-  RECEIVED: "Recebido",
+  RECEIVED: "Pago",
   OVERDUE: "Vencido",
   REFUNDED: "Estornado",
   REFUND_REQUESTED: "Estorno solicitado",
@@ -57,7 +121,17 @@ const TIPO: Record<Cobranca["billing_type"], string> = {
   PIX: "Pix",
   BOLETO: "Boleto",
   CREDIT_CARD: "Cartão",
-  UNDEFINED: "A definir",
+  UNDEFINED: "Cliente escolhe",
+};
+
+const CICLO: Record<Cycle, string> = {
+  WEEKLY: "Semanal",
+  BIWEEKLY: "Quinzenal",
+  MONTHLY: "Mensal",
+  BIMONTHLY: "Bimestral",
+  QUARTERLY: "Trimestral",
+  SEMIANNUALLY: "Semestral",
+  YEARLY: "Anual",
 };
 
 function centavos(valor: string): number {
@@ -77,9 +151,27 @@ function dinheiro(valor: number): string {
   }).format(valor / 100);
 }
 
-export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
-  const qc = useQueryClient();
+function rotuloContato(c: ContactSummary): string {
+  return c.name?.trim() || c.display_name?.trim() || c.phone_number || "Contato";
+}
 
+type Categoria = "all" | "pending" | "received" | "overdue" | "refunded" | "failed";
+
+function categoria(status: string): Exclude<Categoria, "all"> {
+  if (status === "CREATE_FAILED") return "failed";
+  if (status === "RECEIVED") return "received";
+  if (status === "OVERDUE") return "overdue";
+  if (status.includes("REFUND") || status.includes("CHARGEBACK")) return "refunded";
+  return "pending";
+}
+
+export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
+  const t = useT();
+  const qc = useQueryClient();
+  const params = useSearchParams();
+
+  const [contactId, setContactId] = useState(params.get("contact_id") ?? "");
+  const [buscaContato, setBuscaContato] = useState("");
   const [nome, setNome] = useState("");
   const [cpfCnpj, setCpfCnpj] = useState("");
   const [email, setEmail] = useState("");
@@ -90,8 +182,15 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
   const [tipo, setTipo] = useState<Cobranca["billing_type"]>("PIX");
   const [contaId, setContaId] = useState("");
   const [planoId, setPlanoId] = useState("");
-  const [criada, setCriada] = useState<Criacao | null>(null);
+  const [modo, setModo] = useState<Modo>("single");
+  const [parcelas, setParcelas] = useState("2");
+  const [cycle, setCycle] = useState<Cycle>("MONTHLY");
+  const [maxPayments, setMaxPayments] = useState("");
+  const [resultado, setResultado] = useState<ResultadoCriacao | null>(null);
   const [copiado, setCopiado] = useState(false);
+  const [filtro, setFiltro] = useState<Categoria>("all");
+  const [filtroTipo, setFiltroTipo] = useState<"all" | Cobranca["billing_type"]>("all");
+  const [mensagemAcao, setMensagemAcao] = useState<string | null>(null);
 
   const contas = useQuery({
     queryKey: ["financeiro", "catalogo", "contas"],
@@ -114,10 +213,52 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
     queryFn: async () =>
       (
         await apiClient.get<{ data: Cobranca[] }>(
-          "/api/v1/financeiro/asaas/cobrancas?limit=50",
+          "/api/v1/financeiro/asaas/cobrancas?limit=100",
         )
       ).data,
   });
+
+  const assinaturas = useQuery({
+    queryKey: ["financeiro", "asaas", "assinaturas"],
+    queryFn: async () =>
+      (
+        await apiClient.get<{ data: Assinatura[] }>(
+          "/api/v1/financeiro/asaas/assinaturas?limit=50",
+        )
+      ).data,
+  });
+
+  const contatos = useQuery({
+    queryKey: ["pagamentos", "contatos", buscaContato],
+    enabled: buscaContato.trim().length >= 2,
+    queryFn: async () =>
+      (
+        await apiClient.get<{ data: ContactSummary[] }>(
+          `/api/v1/contacts?search=${encodeURIComponent(buscaContato.trim())}&limit=8`,
+        )
+      ).data,
+  });
+
+  const contatoSelecionado = useQuery({
+    queryKey: ["pagamentos", "contato", contactId],
+    enabled: !!contactId,
+    queryFn: async () =>
+      (
+        await apiClient.get<{ data: ContactDetail }>(
+          `/api/v1/contacts/${encodeURIComponent(contactId)}`,
+          { headers: { "X-Decrypt-Purpose": "Gerar cobrança pelo Asaas" } },
+        )
+      ).data,
+  });
+
+  useEffect(() => {
+    const contact = contatoSelecionado.data;
+    if (!contact) return;
+    setNome(contact.name?.trim() || contact.display_name?.trim() || "");
+    setEmail(contact.email ?? "");
+    setTelefone(contact.phone_number ?? "");
+    if (contact.cpf_decrypted) setCpfCnpj(contact.cpf_decrypted);
+  }, [contatoSelecionado.data]);
 
   const planosEntrada = useMemo(
     () => (planos.data ?? []).filter((p) => p.direction === "in"),
@@ -126,16 +267,26 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
 
   const valorCentavos = centavos(valor);
   const documentoValido = [11, 14].includes(cpfCnpj.replace(/\D/g, "").length);
+  const numeroParcelas = Number(parcelas);
+  const numeroMaxPayments = maxPayments.trim() ? Number(maxPayments) : undefined;
+
   const podeEnviar =
     podeCobrar &&
     nome.trim().length >= 2 &&
     documentoValido &&
     valorCentavos > 0 &&
     !!vencimento &&
-    !!contaId;
+    !!contaId &&
+    (modo !== "installment" ||
+      (Number.isInteger(numeroParcelas) && numeroParcelas >= 2 && numeroParcelas <= 24)) &&
+    (modo !== "subscription" ||
+      numeroMaxPayments === undefined ||
+      (Number.isInteger(numeroMaxPayments) &&
+        numeroMaxPayments >= 1 &&
+        numeroMaxPayments <= 240));
 
   const criar = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<ResultadoCriacao> => {
       const cliente = await apiClient.post<{
         data: { customer: { id: string }; created: boolean };
       }>("/api/v1/financeiro/asaas/clientes", {
@@ -143,114 +294,322 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
         cpfCnpj,
         ...(email.trim() ? { email: email.trim() } : {}),
         ...(telefone.trim() ? { mobilePhone: telefone.trim() } : {}),
+        ...(contactId ? { contact_id: contactId } : {}),
       });
 
-      const cobranca = await apiClient.post<{ data: Criacao }>(
-        "/api/v1/financeiro/asaas/cobrancas",
-        {
-          customer_id: cliente.data.customer.id,
-          billing_type: tipo,
-          value_cents: valorCentavos,
-          due_date: vencimento,
-          ...(descricao.trim() ? { description: descricao.trim() } : {}),
-          account_id: contaId,
-          ...(planoId ? { account_plan_id: planoId } : {}),
-        },
-      );
+      const base = {
+        customer_id: cliente.data.customer.id,
+        ...(contactId ? { contact_id: contactId } : {}),
+        billing_type: tipo,
+        description: descricao.trim() || undefined,
+        account_id: contaId,
+        account_plan_id: planoId || undefined,
+      };
 
-      return cobranca.data;
+      if (modo === "installment") {
+        const result = await apiClient.post<{
+          data: {
+            payments: PagamentoRemoto[];
+            pix: Pix | null;
+          };
+        }>("/api/v1/financeiro/asaas/parcelamentos", {
+          ...base,
+          total_value_cents: valorCentavos,
+          installment_count: numeroParcelas,
+          due_date: vencimento,
+        });
+        return {
+          kind: "installment",
+          title: t("Parcelamento criado"),
+          payment: result.data.payments[0] ?? null,
+          pix: result.data.pix,
+          count: numeroParcelas,
+        };
+      }
+
+      if (modo === "subscription") {
+        const result = await apiClient.post<{
+          data: {
+            subscription: { id: string };
+            payments: PagamentoRemoto[];
+            pix: Pix | null;
+          };
+        }>("/api/v1/financeiro/asaas/assinaturas", {
+          ...base,
+          value_cents: valorCentavos,
+          next_due_date: vencimento,
+          cycle,
+          ...(numeroMaxPayments ? { max_payments: numeroMaxPayments } : {}),
+        });
+        return {
+          kind: "subscription",
+          title: t("Recorrência criada"),
+          payment: result.data.payments[0] ?? null,
+          pix: result.data.pix,
+          subscriptionId: result.data.subscription.id,
+        };
+      }
+
+      const result = await apiClient.post<{
+        data: {
+          payment: PagamentoRemoto;
+          pix: Pix | null;
+          pix_error: string | null;
+        };
+      }>("/api/v1/financeiro/asaas/cobrancas", {
+        ...base,
+        value_cents: valorCentavos,
+        due_date: vencimento,
+      });
+      return {
+        kind: "single",
+        title: t("Cobrança criada"),
+        payment: result.data.payment,
+        pix: result.data.pix,
+        pix_error: result.data.pix_error,
+      };
     },
     onSuccess: (data) => {
-      setCriada(data);
+      setResultado(data);
       setCopiado(false);
+      setMensagemAcao(null);
       void qc.invalidateQueries({ queryKey: ["financeiro", "asaas", "cobrancas"] });
+      void qc.invalidateQueries({ queryKey: ["financeiro", "asaas", "assinaturas"] });
     },
     onError: showApiError,
   });
 
-  async function copiarPix() {
-    if (!criada?.pix?.payload) return;
-    await navigator.clipboard.writeText(criada.pix.payload);
+  const enviarWhatsApp = useMutation({
+    mutationFn: async (paymentId: string) =>
+      (
+        await apiClient.post<{ data: { sent: boolean } }>(
+          "/api/v1/financeiro/asaas/cobrancas/enviar-whatsapp",
+          { payment_id: paymentId },
+        )
+      ).data,
+    onSuccess: () => setMensagemAcao(t("Cobrança enviada pelo WhatsApp.")),
+    onError: showApiError,
+  });
+
+  const copiarPixExistente = useMutation({
+    mutationFn: async (paymentId: string) => {
+      const pix = (
+        await apiClient.get<{ data: Pix }>(
+          `/api/v1/financeiro/asaas/cobrancas/${encodeURIComponent(paymentId)}/pix`,
+        )
+      ).data;
+      await navigator.clipboard.writeText(pix.payload);
+      return paymentId;
+    },
+    onSuccess: () => setMensagemAcao(t("Código Pix copiado.")),
+    onError: showApiError,
+  });
+
+  async function copiarPixNovo() {
+    if (!resultado?.pix?.payload) return;
+    await navigator.clipboard.writeText(resultado.pix.payload);
     setCopiado(true);
   }
 
+  function escolherContato(contact: ContactSummary) {
+    setContactId(contact.id);
+    setBuscaContato("");
+    setNome(contact.name?.trim() || contact.display_name?.trim() || "");
+    setEmail(contact.email ?? "");
+    setTelefone(contact.phone_number ?? "");
+    setCpfCnpj("");
+  }
+
+  function limparContato() {
+    setContactId("");
+    setNome("");
+    setCpfCnpj("");
+    setEmail("");
+    setTelefone("");
+  }
+
+  const totais = useMemo(() => {
+    const base = cobrancas.data ?? [];
+    return {
+      receber: base
+        .filter((p) => categoria(p.status) === "pending" || categoria(p.status) === "overdue")
+        .reduce((sum, p) => sum + Number(p.amount_cents), 0),
+      recebido: base
+        .filter((p) => categoria(p.status) === "received")
+        .reduce((sum, p) => sum + Number(p.amount_cents), 0),
+      vencido: base
+        .filter((p) => categoria(p.status) === "overdue")
+        .reduce((sum, p) => sum + Number(p.amount_cents), 0),
+    };
+  }, [cobrancas.data]);
+
+  const filtradas = useMemo(
+    () =>
+      (cobrancas.data ?? []).filter(
+        (p) =>
+          (filtro === "all" || categoria(p.status) === filtro) &&
+          (filtroTipo === "all" || p.billing_type === filtroTipo),
+      ),
+    [cobrancas.data, filtro, filtroTipo],
+  );
+
+  const firstPayment = resultado?.payment ?? null;
+
   return (
     <div className="space-y-4">
+      <section className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border p-4">
+          <p className="text-xs uppercase text-text-muted">{t("A receber")}</p>
+          <p className="mt-1 text-xl font-semibold">{dinheiro(totais.receber)}</p>
+        </div>
+        <div className="rounded-xl border p-4">
+          <p className="text-xs uppercase text-text-muted">{t("Recebido")}</p>
+          <p className="mt-1 text-xl font-semibold">{dinheiro(totais.recebido)}</p>
+        </div>
+        <div className="rounded-xl border p-4">
+          <p className="text-xs uppercase text-text-muted">{t("Vencido")}</p>
+          <p className="mt-1 text-xl font-semibold">{dinheiro(totais.vencido)}</p>
+        </div>
+      </section>
+
       {podeCobrar ? (
         <section className="space-y-4 rounded-xl border p-4">
           <div>
-            <h2 className="font-semibold">Nova cobrança</h2>
+            <h2 className="font-semibold">{t("Nova cobrança")}</h2>
             <p className="text-sm text-text-muted">
-              O cliente é localizado ou criado no Asaas e a cobrança fica vinculada ao financeiro.
+              {t("Avulsa, parcelada ou recorrente. O recebimento entra no financeiro somente após o webhook do Asaas.")}
             </p>
           </div>
 
           {(contas.data?.length ?? 0) === 0 ? (
             <div className="rounded-lg border border-warning/40 bg-warning-bg p-3 text-sm">
-              Cadastre primeiro uma conta financeira para receber os pagamentos.{" "}
+              {t("Cadastre primeiro uma conta financeira.")}{" "}
               <Link className="font-medium underline" href="/app/settings/tenant/financeiro">
-                Abrir configurações financeiras
+                {t("Abrir configurações financeiras")}
               </Link>
             </div>
           ) : null}
 
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">{t("Contato do CRM")}</label>
+            {contactId && contatoSelecionado.data ? (
+              <div className="flex flex-wrap items-center gap-2 rounded-lg border p-3">
+                <Link
+                  href={`/app/contacts/${contactId}`}
+                  className="font-medium underline-offset-4 hover:underline"
+                >
+                  {rotuloContato(contatoSelecionado.data)}
+                </Link>
+                <span className="text-sm text-text-muted">
+                  {contatoSelecionado.data.phone_number ?? ""}
+                </span>
+                <Button variant="ghost" onClick={limparContato}>
+                  {t("Trocar contato")}
+                </Button>
+              </div>
+            ) : (
+              <div className="relative max-w-xl">
+                <input
+                  className="min-h-11 w-full rounded-md border p-2"
+                  value={buscaContato}
+                  onChange={(e) => setBuscaContato(e.target.value)}
+                  placeholder={t("Busque pelo nome, telefone ou e-mail")}
+                />
+                {buscaContato.trim().length >= 2 ? (
+                  <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md border bg-card shadow-lg">
+                    {(contatos.data ?? []).map((contact) => (
+                      <button
+                        key={contact.id}
+                        type="button"
+                        onClick={() => escolherContato(contact)}
+                        className="block w-full border-b p-3 text-left last:border-b-0 hover:bg-accent/50"
+                      >
+                        <span className="block font-medium">{rotuloContato(contact)}</span>
+                        <span className="block text-xs text-text-muted">
+                          {[contact.phone_number, contact.email].filter(Boolean).join(" · ")}
+                        </span>
+                      </button>
+                    ))}
+                    {!contatos.isLoading && (contatos.data?.length ?? 0) === 0 ? (
+                      <p className="p-3 text-sm text-text-muted">{t("Nenhum contato encontrado.")}</p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            )}
+            {contactId &&
+            contatoSelecionado.data?.cpf_available &&
+            !contatoSelecionado.data.cpf_decrypted ? (
+              <p className="text-xs text-text-muted">
+                {t("O contato possui CPF/CNPJ cadastrado, mas seu perfil não pode descriptografá-lo. Informe o documento abaixo para gerar a cobrança.")}
+              </p>
+            ) : null}
+          </div>
+
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             <label className="space-y-1 text-sm">
-              <span>Nome do cliente</span>
+              <span>{t("Nome do cliente")}</span>
               <input
                 className="min-h-11 w-full rounded-md border p-2"
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
-                placeholder="Ex.: Maria da Silva"
+                placeholder={t("Ex.: Maria da Silva")}
               />
             </label>
-
             <label className="space-y-1 text-sm">
-              <span>CPF/CNPJ</span>
+              <span>{t("CPF/CNPJ")}</span>
               <input
                 className="min-h-11 w-full rounded-md border p-2"
                 value={cpfCnpj}
                 onChange={(e) => setCpfCnpj(e.target.value)}
                 inputMode="numeric"
-                placeholder="Somente números ou formatado"
+                placeholder={t("CPF ou CNPJ")}
               />
             </label>
-
             <label className="space-y-1 text-sm">
-              <span>E-mail do cliente</span>
+              <span>{t("E-mail")}</span>
               <input
                 type="email"
                 className="min-h-11 w-full rounded-md border p-2"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Opcional"
+                placeholder={t("Opcional")}
               />
             </label>
-
             <label className="space-y-1 text-sm">
-              <span>Telefone</span>
+              <span>{t("Telefone")}</span>
               <input
                 className="min-h-11 w-full rounded-md border p-2"
                 value={telefone}
                 onChange={(e) => setTelefone(e.target.value)}
                 inputMode="tel"
-                placeholder="Opcional"
+                placeholder={t("Opcional")}
               />
             </label>
-
             <label className="space-y-1 text-sm">
-              <span>Valor</span>
+              <span>{t("Tipo de cobrança")}</span>
+              <select
+                className="min-h-11 w-full rounded-md border p-2"
+                value={modo}
+                onChange={(e) => setModo(e.target.value as Modo)}
+              >
+                <option value="single">{t("Avulsa")}</option>
+                <option value="installment">{t("Parcelada")}</option>
+                <option value="subscription">{t("Recorrente / mensalidade")}</option>
+              </select>
+            </label>
+            <label className="space-y-1 text-sm">
+              <span>{modo === "installment" ? t("Valor total") : t("Valor")}</span>
               <input
                 className="min-h-11 w-full rounded-md border p-2"
                 value={valor}
                 onChange={(e) => setValor(e.target.value)}
                 inputMode="decimal"
-                placeholder="Ex.: 10,00"
+                placeholder={t("Ex.: 150,00")}
               />
             </label>
-
             <label className="space-y-1 text-sm">
-              <span>Vencimento</span>
+              <span>{modo === "subscription" ? t("Primeiro vencimento") : t("Vencimento")}</span>
               <input
                 type="date"
                 className="min-h-11 w-full rounded-md border p-2"
@@ -258,29 +617,74 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
                 onChange={(e) => setVencimento(e.target.value)}
               />
             </label>
-
             <label className="space-y-1 text-sm">
-              <span>Forma de cobrança</span>
+              <span>{t("Forma de cobrança")}</span>
               <select
                 className="min-h-11 w-full rounded-md border p-2"
                 value={tipo}
                 onChange={(e) => setTipo(e.target.value as Cobranca["billing_type"])}
               >
-                <option value="PIX">Pix</option>
-                <option value="BOLETO">Boleto</option>
-                <option value="CREDIT_CARD">Cartão</option>
-                <option value="UNDEFINED">Cliente escolhe</option>
+                <option value="PIX">{t("Pix")}</option>
+                <option value="BOLETO">{t("Boleto")}</option>
+                <option value="CREDIT_CARD">{t("Cartão")}</option>
+                <option value="UNDEFINED">{t("Cliente escolhe")}</option>
               </select>
             </label>
 
+            {modo === "installment" ? (
+              <label className="space-y-1 text-sm">
+                <span>{t("Número de parcelas")}</span>
+                <input
+                  className="min-h-11 w-full rounded-md border p-2"
+                  value={parcelas}
+                  onChange={(e) => setParcelas(e.target.value)}
+                  inputMode="numeric"
+                  min={2}
+                  max={24}
+                />
+              </label>
+            ) : null}
+
+            {modo === "subscription" ? (
+              <>
+                <label className="space-y-1 text-sm">
+                  <span>{t("Periodicidade")}</span>
+                  <select
+                    className="min-h-11 w-full rounded-md border p-2"
+                    value={cycle}
+                    onChange={(e) => setCycle(e.target.value as Cycle)}
+                  >
+                    {Object.entries(CICLO).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {t(label)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="space-y-1 text-sm">
+                  <span>{t("Quantidade máxima")}</span>
+                  <input
+                    className="min-h-11 w-full rounded-md border p-2"
+                    value={maxPayments}
+                    onChange={(e) => setMaxPayments(e.target.value)}
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={240}
+                    placeholder={t("Vazio = sem limite")}
+                  />
+                </label>
+              </>
+            ) : null}
+
             <label className="space-y-1 text-sm">
-              <span>Conta financeira</span>
+              <span>{t("Conta financeira")}</span>
               <select
                 className="min-h-11 w-full rounded-md border p-2"
                 value={contaId}
                 onChange={(e) => setContaId(e.target.value)}
               >
-                <option value="">Selecione</option>
+                <option value="">{t("Selecione")}</option>
                 {(contas.data ?? []).map((conta) => (
                   <option key={conta.id} value={conta.id}>
                     {conta.name}
@@ -288,15 +692,14 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
                 ))}
               </select>
             </label>
-
             <label className="space-y-1 text-sm">
-              <span>Plano de contas</span>
+              <span>{t("Plano de contas")}</span>
               <select
                 className="min-h-11 w-full rounded-md border p-2"
                 value={planoId}
                 onChange={(e) => setPlanoId(e.target.value)}
               >
-                <option value="">Sem classificação</option>
+                <option value="">{t("Sem classificação")}</option>
                 {planosEntrada.map((plano) => (
                   <option key={plano.id} value={plano.id}>
                     {plano.name}
@@ -307,137 +710,237 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
           </div>
 
           <label className="block space-y-1 text-sm">
-            <span>Descrição</span>
+            <span>{t("Descrição")}</span>
             <input
               className="min-h-11 w-full rounded-md border p-2"
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
-              placeholder="Ex.: Honorários, consulta, parcela..."
+              placeholder={t("Ex.: Honorários, consulta, mensalidade...")}
             />
           </label>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Button
-              disabled={!podeEnviar || criar.isPending}
-              onClick={() => criar.mutate()}
-            >
-              {criar.isPending ? "Gerando cobrança…" : "Gerar cobrança"}
+            <Button disabled={!podeEnviar || criar.isPending} onClick={() => criar.mutate()}>
+              {criar.isPending ? t("Gerando…") : t("Gerar cobrança")}
             </Button>
             {valorCentavos > 0 ? (
-              <span className="text-sm text-text-muted">{dinheiro(valorCentavos)}</span>
+              <span className="text-sm text-text-muted">
+                {dinheiro(valorCentavos)}
+                {modo === "installment" && numeroParcelas >= 2 ? ` · ${numeroParcelas}x` : ""}
+              </span>
             ) : null}
           </div>
         </section>
       ) : (
         <section className="rounded-xl border p-4 text-sm text-text-muted">
-          Seu perfil pode consultar cobranças, mas não criar novas.
+          {t("Seu perfil pode consultar cobranças, mas não criar novas.")}
         </section>
       )}
 
-      {criada ? (
+      {resultado ? (
         <section className="space-y-3 rounded-xl border p-4">
           <div>
-            <h2 className="font-semibold">Cobrança criada</h2>
+            <h2 className="font-semibold">{resultado.title}</h2>
             <p className="text-sm text-text-muted">
-              Status no Asaas: {STATUS[criada.payment.status] ?? criada.payment.status}
+              {firstPayment
+                ? <>{t("Primeira cobrança")}: {STATUS[firstPayment.status] ? t(STATUS[firstPayment.status]!) : firstPayment.status}</>
+                : t("O Asaas criará as cobranças conforme o calendário configurado.")}
             </p>
           </div>
 
-          {criada.pix ? (
+          {resultado.pix ? (
             <div className="grid gap-4 md:grid-cols-[220px_1fr]">
               <div className="rounded-lg border bg-white p-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={`data:image/png;base64,${criada.pix.encodedImage}`}
-                  alt="QR Code Pix"
+                  src={`data:image/png;base64,${resultado.pix.encodedImage}`}
+                  alt={t("QR Code Pix")}
                   className="h-auto w-full"
                 />
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-medium">Pix copia e cola</p>
+                <p className="text-sm font-medium">{t("Pix copia e cola")}</p>
                 <textarea
                   readOnly
                   className="min-h-28 w-full rounded-md border p-2 text-xs"
-                  value={criada.pix.payload}
+                  value={resultado.pix.payload}
                 />
-                <Button variant="ghost" onClick={() => void copiarPix()}>
-                  {copiado ? "Copiado" : "Copiar código Pix"}
+                <Button variant="ghost" onClick={() => void copiarPixNovo()}>
+                  {copiado ? t("Copiado") : t("Copiar código Pix")}
                 </Button>
               </div>
             </div>
           ) : null}
 
-          {criada.pix_error ? (
-            <p className="text-sm text-destructive">{criada.pix_error}</p>
+          {resultado.kind === "single" && resultado.pix_error ? (
+            <p className="text-sm text-destructive">{resultado.pix_error}</p>
           ) : null}
 
-          {criada.payment.invoiceUrl ? (
+          {firstPayment?.invoiceUrl ? (
             <a
-              href={criada.payment.invoiceUrl}
+              href={firstPayment.invoiceUrl}
               target="_blank"
               rel="noreferrer"
               className="text-sm font-medium underline"
             >
-              Abrir cobrança no Asaas
+              {t("Abrir primeira cobrança")}
             </a>
           ) : null}
         </section>
       ) : null}
 
       <section className="space-y-3 rounded-xl border p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="font-semibold">Cobranças recentes</h2>
+            <h2 className="font-semibold">{t("Cobranças")}</h2>
             <p className="text-sm text-text-muted">
-              O status é atualizado pelos webhooks do Asaas.
+              {t("Status atualizado pelos webhooks do Asaas.")}
             </p>
           </div>
-          <Button
-            variant="ghost"
-            disabled={cobrancas.isFetching}
-            onClick={() => void cobrancas.refetch()}
-          >
-            {cobrancas.isFetching ? "Atualizando…" : "Atualizar"}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <select
+              aria-label={t("Filtrar por status")}
+              className="min-h-11 rounded-md border p-2 text-sm"
+              value={filtro}
+              onChange={(e) => setFiltro(e.target.value as Categoria)}
+            >
+              <option value="all">{t("Todos os status")}</option>
+              <option value="pending">{t("Pendentes")}</option>
+              <option value="received">{t("Pagos")}</option>
+              <option value="overdue">{t("Vencidos")}</option>
+              <option value="refunded">{t("Estornados")}</option>
+              <option value="failed">{t("Falhas")}</option>
+            </select>
+            <select
+              aria-label={t("Filtrar por forma de pagamento")}
+              className="min-h-11 rounded-md border p-2 text-sm"
+              value={filtroTipo}
+              onChange={(e) =>
+                setFiltroTipo(e.target.value as "all" | Cobranca["billing_type"])
+              }
+            >
+              <option value="all">{t("Todas as formas")}</option>
+              <option value="PIX">{t("Pix")}</option>
+              <option value="BOLETO">{t("Boleto")}</option>
+              <option value="CREDIT_CARD">{t("Cartão")}</option>
+              <option value="UNDEFINED">{t("Cliente escolhe")}</option>
+            </select>
+            <Button
+              variant="ghost"
+              disabled={cobrancas.isFetching}
+              onClick={() => void cobrancas.refetch()}
+            >
+              {cobrancas.isFetching ? t("Atualizando…") : t("Atualizar")}
+            </Button>
+          </div>
         </div>
 
-        {cobrancas.isLoading ? <p className="text-sm">Carregando…</p> : null}
+        {mensagemAcao ? (
+          <p role="status" className="text-sm text-text-muted">
+            {mensagemAcao}
+          </p>
+        ) : null}
 
-        {!cobrancas.isLoading && (cobrancas.data?.length ?? 0) === 0 ? (
-          <p className="text-sm text-text-muted">Nenhuma cobrança criada pelo CRM ainda.</p>
+        {cobrancas.isLoading ? <p className="text-sm">{t("Carregando…")}</p> : null}
+
+        {!cobrancas.isLoading && filtradas.length === 0 ? (
+          <p className="text-sm text-text-muted">{t("Nenhuma cobrança neste filtro.")}</p>
         ) : null}
 
         <div className="space-y-2">
-          {(cobrancas.data ?? []).map((cobranca) => (
+          {filtradas.map((cobranca) => (
             <article
               key={cobranca.id}
               className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
             >
               <div className="min-w-0">
                 <p className="font-medium">
-                  {dinheiro(cobranca.amount_cents)} · {TIPO[cobranca.billing_type]}
+                  {dinheiro(Number(cobranca.amount_cents))} · {t(TIPO[cobranca.billing_type])}
+                  {cobranca.installment_number ? <> · {t("parcela")} {cobranca.installment_number}</> : null}
                 </p>
                 <p className="text-sm text-text-muted">
-                  {cobranca.description || "Sem descrição"} · vence em {cobranca.due_date}
+                  {cobranca.description || t("Sem descrição")} · {t("vence em")} {cobranca.due_date}
                 </p>
-                {cobranca.needs_reconciliation ? (
-                  <p className="text-xs text-warning-fg">Precisa de conferência manual</p>
-                ) : null}
+                <div className="mt-1 flex flex-wrap gap-2 text-xs">
+                  {cobranca.contact_id ? (
+                    <Link className="underline" href={`/app/contacts/${cobranca.contact_id}`}>
+                      {t("Abrir contato")}
+                    </Link>
+                  ) : null}
+                  {cobranca.installment_id ? <span>{t("Parcelamento")}</span> : null}
+                  {cobranca.subscription_id ? <span>{t("Recorrente")}</span> : null}
+                  {cobranca.needs_reconciliation ? (
+                    <span className="text-warning-fg">{t("Precisa de conferência manual")}</span>
+                  ) : null}
+                </div>
               </div>
-              <div className="text-right">
-                <p className="text-sm font-medium">{STATUS[cobranca.status] ?? cobranca.status}</p>
+
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <span className="text-sm font-medium">
+                  {STATUS[cobranca.status] ? t(STATUS[cobranca.status]!) : cobranca.status}
+                </span>
                 {cobranca.invoice_url ? (
                   <a
                     href={cobranca.invoice_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs underline"
+                    className="rounded-md border px-3 py-2 text-xs font-medium"
                   >
-                    Abrir cobrança
+                    {t("Segunda via")}
                   </a>
+                ) : null}
+                {cobranca.billing_type === "PIX" && cobranca.asaas_payment_id ? (
+                  <Button
+                    variant="ghost"
+                    disabled={copiarPixExistente.isPending}
+                    onClick={() => copiarPixExistente.mutate(cobranca.id)}
+                  >
+                    {t("Copiar Pix")}
+                  </Button>
+                ) : null}
+                {cobranca.contact_id && cobranca.invoice_url && podeCobrar ? (
+                  <Button
+                    variant="ghost"
+                    disabled={enviarWhatsApp.isPending}
+                    onClick={() => enviarWhatsApp.mutate(cobranca.id)}
+                  >
+                    {t("Enviar WhatsApp")}
+                  </Button>
                 ) : null}
               </div>
             </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3 rounded-xl border p-4">
+        <div>
+          <h2 className="font-semibold">{t("Recorrências / mensalidades")}</h2>
+          <p className="text-sm text-text-muted">
+            {t("O Asaas gera novas cobranças automaticamente conforme a periodicidade.")}
+          </p>
+        </div>
+        {assinaturas.isLoading ? <p className="text-sm">{t("Carregando…")}</p> : null}
+        {!assinaturas.isLoading && (assinaturas.data?.length ?? 0) === 0 ? (
+          <p className="text-sm text-text-muted">{t("Nenhuma recorrência criada.")}</p>
+        ) : null}
+        <div className="space-y-2">
+          {(assinaturas.data ?? []).map((assinatura) => (
+            <div
+              key={assinatura.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
+            >
+              <div>
+                <p className="font-medium">
+                  {assinatura.description || t("Mensalidade")} · {dinheiro(Number(assinatura.amount_cents))}
+                </p>
+                <p className="text-sm text-text-muted">
+                  {t(CICLO[assinatura.cycle])} · {t("próximo vencimento")} {assinatura.next_due_date}
+                  {assinatura.max_payments ? <> · {t("até")} {assinatura.max_payments} {t("cobranças")}</> : null}
+                </p>
+              </div>
+              <span className="text-sm font-medium">{assinatura.status}</span>
+            </div>
           ))}
         </div>
       </section>
