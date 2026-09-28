@@ -134,7 +134,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     );
   }
 
-  let payments = [];
+  let payments: Awaited<ReturnType<typeof listAsaasSubscriptionPayments>> = [];
   try {
     payments = await listAsaasSubscriptionPayments(subscription.id);
   } catch {
@@ -159,10 +159,15 @@ export async function POST(req: NextRequest): Promise<Response> {
       account_plan_id: parsed.data.account_plan_id ?? null,
       created_by_user_id: authz.user.id,
     }));
-    await supabase.from("asaas_payments").upsert(rows, {
-      onConflict: "asaas_payment_id",
-      ignoreDuplicates: true,
-    });
+    const { error: paymentError } = await supabase.from("asaas_payments").insert(rows);
+    if (paymentError && paymentError.code !== "23505") {
+      return fail(
+        "asaas_local_sync_failed",
+        "A assinatura foi criada, mas as primeiras cobranças não foram sincronizadas no CRM.",
+        500,
+        { requestId },
+      );
+    }
   }
 
   let pix = null;
