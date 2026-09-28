@@ -315,7 +315,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       // em que o webhook chegou distorcia competência/caixa quando a entrega
       // fosse atrasada ou reprocessada.
       const paidDate = event.payment.paymentDate ?? event.payment.clientPaymentDate;
-      const paidAt = paidDate && /^\\d{4}-\\d{2}-\\d{2}$/.test(paidDate)
+      const paidAt = paidDate && /^\d{4}-\d{2}-\d{2}$/.test(paidDate)
         ? `${paidDate}T00:00:00.000Z`
         : new Date().toISOString();
 
