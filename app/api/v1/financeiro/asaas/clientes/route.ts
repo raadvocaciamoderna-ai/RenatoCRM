@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 
 import { ok, fail } from "@/lib/api/wrappers";
 import {
+  AsaasApiError,
   createAsaasCustomer,
   findAsaasCustomerByCpfCnpj,
   getAsaasCustomer,
@@ -83,16 +84,30 @@ export async function POST(req: NextRequest): Promise<Response> {
     let created = false;
 
     if (!customer) {
-      customer = await createAsaasCustomer({
-        name: parsed.data.name,
-        cpfCnpj: parsed.data.cpfCnpj,
-        ...(parsed.data.email ? { email: parsed.data.email } : {}),
-        ...(parsed.data.mobilePhone ? { mobilePhone: parsed.data.mobilePhone } : {}),
-        ...(parsed.data.contact_id
-          ? { externalReference: `crm-contact:${parsed.data.contact_id}` }
-          : {}),
-      });
-      created = true;
+      try {
+        customer = await createAsaasCustomer({
+          name: parsed.data.name,
+          cpfCnpj: parsed.data.cpfCnpj,
+          ...(parsed.data.email ? { email: parsed.data.email } : {}),
+          ...(parsed.data.mobilePhone ? { mobilePhone: parsed.data.mobilePhone } : {}),
+          ...(parsed.data.contact_id
+            ? { externalReference: `crm-contact:${parsed.data.contact_id}` }
+            : {}),
+        });
+        created = true;
+      } catch (error) {
+        // Timeout/5xx não prova que a escrita falhou. Procura novamente pelo
+        // documento antes de devolver erro, evitando duplicar o cliente num
+        // segundo clique do operador.
+        if (error instanceof AsaasApiError && error.status >= 500) {
+          try {
+            customer = await findAsaasCustomerByCpfCnpj(parsed.data.cpfCnpj);
+          } catch {
+            customer = null;
+          }
+        }
+        if (!customer) throw error;
+      }
     }
 
     if (parsed.data.contact_id) {
