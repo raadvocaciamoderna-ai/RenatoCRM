@@ -348,6 +348,19 @@ export const NAV_CATALOG = [
     minRole: "viewer",
   },
   {
+    // Uso diário do financeiro: criar e acompanhar cobranças enviadas ao cliente.
+    // Fica no CRM porque nasce da relação com a pessoa, mas é uma porta própria
+    // para não obrigar quem cobra a entrar em Configurações.
+    href: "/app/pagamentos",
+    label: "Pagamentos",
+    description: "Crie e acompanhe cobranças Pix, boleto e cartão pelo Asaas.",
+    icon: "Receipt",
+    group: "crm",
+    section: "O dia a dia da venda",
+    minRole: "viewer",
+    sidebar: true,
+  },
+  {
     // O catálogo financeiro: contas, formas de pagamento e plano de contas.
     //
     // Fica em "Sua empresa" pelo mesmo motivo dos tipos de agendamento — é onde
@@ -664,7 +677,6 @@ export const NAV_CATALOG = [
     // pessoa — orçamento e criativo são da empresa inteira. Mesmo grau dos
     // outros dois vizinhos do grupo.
     minRole: "manager",
-    sidebar: true,
   },
   {
     // Irmã de "Desempenho", não a mesma coisa: lá é DESFECHO (funil agora,
