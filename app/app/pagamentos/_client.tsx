@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { showApiError } from "@/components/feedback/ApiErrorToast";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/hooks/i18n/useT";
 import { apiClient } from "@/lib/api/client";
 
 type Conta = { id: string; name: string };
@@ -164,6 +165,7 @@ function categoria(status: string): Exclude<Categoria, "all"> {
 }
 
 export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
+  const t = useT();
   const qc = useQueryClient();
   const params = useSearchParams();
 
@@ -315,7 +317,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
         });
         return {
           kind: "installment",
-          title: `Parcelamento em ${numeroParcelas}x criado`,
+          title: t("Parcelamento criado"),
           payment: result.data.payments[0] ?? null,
           pix: result.data.pix,
           count: numeroParcelas,
@@ -338,7 +340,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
         });
         return {
           kind: "subscription",
-          title: `Recorrência ${CICLO[cycle].toLowerCase()} criada`,
+          title: t("Recorrência criada"),
           payment: result.data.payments[0] ?? null,
           pix: result.data.pix,
           subscriptionId: result.data.subscription.id,
@@ -358,7 +360,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
       });
       return {
         kind: "single",
-        title: "Cobrança criada",
+        title: t("Cobrança criada"),
         payment: result.data.payment,
         pix: result.data.pix,
         pix_error: result.data.pix_error,
@@ -382,7 +384,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
           { payment_id: paymentId },
         )
       ).data,
-    onSuccess: () => setMensagemAcao("Cobrança enviada pelo WhatsApp."),
+    onSuccess: () => setMensagemAcao(t("Cobrança enviada pelo WhatsApp.")),
     onError: showApiError,
   });
 
@@ -396,7 +398,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
       await navigator.clipboard.writeText(pix.payload);
       return paymentId;
     },
-    onSuccess: () => setMensagemAcao("Código Pix copiado."),
+    onSuccess: () => setMensagemAcao(t("Código Pix copiado.")),
     onError: showApiError,
   });
 
@@ -454,15 +456,15 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
     <div className="space-y-4">
       <section className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-xl border p-4">
-          <p className="text-xs uppercase text-text-muted">A receber</p>
+          <p className="text-xs uppercase text-text-muted">{t("A receber")}</p>
           <p className="mt-1 text-xl font-semibold">{dinheiro(totais.receber)}</p>
         </div>
         <div className="rounded-xl border p-4">
-          <p className="text-xs uppercase text-text-muted">Recebido</p>
+          <p className="text-xs uppercase text-text-muted">{t("Recebido")}</p>
           <p className="mt-1 text-xl font-semibold">{dinheiro(totais.recebido)}</p>
         </div>
         <div className="rounded-xl border p-4">
-          <p className="text-xs uppercase text-text-muted">Vencido</p>
+          <p className="text-xs uppercase text-text-muted">{t("Vencido")}</p>
           <p className="mt-1 text-xl font-semibold">{dinheiro(totais.vencido)}</p>
         </div>
       </section>
@@ -470,23 +472,23 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
       {podeCobrar ? (
         <section className="space-y-4 rounded-xl border p-4">
           <div>
-            <h2 className="font-semibold">Nova cobrança</h2>
+            <h2 className="font-semibold">{t("Nova cobrança")}</h2>
             <p className="text-sm text-text-muted">
-              Avulsa, parcelada ou recorrente. O recebimento entra no financeiro somente após o webhook do Asaas.
+              {t("Avulsa, parcelada ou recorrente. O recebimento entra no financeiro somente após o webhook do Asaas.")}
             </p>
           </div>
 
           {(contas.data?.length ?? 0) === 0 ? (
             <div className="rounded-lg border border-warning/40 bg-warning-bg p-3 text-sm">
-              Cadastre primeiro uma conta financeira.{" "}
+              {t("Cadastre primeiro uma conta financeira.")}{" "}
               <Link className="font-medium underline" href="/app/settings/tenant/financeiro">
-                Abrir configurações financeiras
+                {t("Abrir configurações financeiras")}
               </Link>
             </div>
           ) : null}
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium">Contato do CRM</label>
+            <label className="block text-sm font-medium">{t("Contato do CRM")}</label>
             {contactId && contatoSelecionado.data ? (
               <div className="flex flex-wrap items-center gap-2 rounded-lg border p-3">
                 <Link
@@ -499,7 +501,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
                   {contatoSelecionado.data.phone_number ?? ""}
                 </span>
                 <Button variant="ghost" onClick={limparContato}>
-                  Trocar contato
+                  {t("Trocar contato")}
                 </Button>
               </div>
             ) : (
@@ -508,7 +510,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
                   className="min-h-11 w-full rounded-md border p-2"
                   value={buscaContato}
                   onChange={(e) => setBuscaContato(e.target.value)}
-                  placeholder="Busque pelo nome, telefone ou e-mail"
+                  placeholder={t("Busque pelo nome, telefone ou e-mail")}
                 />
                 {buscaContato.trim().length >= 2 ? (
                   <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md border bg-card shadow-lg">
@@ -526,7 +528,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
                       </button>
                     ))}
                     {!contatos.isLoading && (contatos.data?.length ?? 0) === 0 ? (
-                      <p className="p-3 text-sm text-text-muted">Nenhum contato encontrado.</p>
+                      <p className="p-3 text-sm text-text-muted">{t("Nenhum contato encontrado.")}</p>
                     ) : null}
                   </div>
                 ) : null}
@@ -536,75 +538,75 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
             contatoSelecionado.data?.cpf_available &&
             !contatoSelecionado.data.cpf_decrypted ? (
               <p className="text-xs text-text-muted">
-                O contato possui CPF/CNPJ cadastrado, mas seu perfil não pode descriptografá-lo. Informe o documento abaixo para gerar a cobrança.
+                {t("O contato possui CPF/CNPJ cadastrado, mas seu perfil não pode descriptografá-lo. Informe o documento abaixo para gerar a cobrança.")}
               </p>
             ) : null}
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             <label className="space-y-1 text-sm">
-              <span>Nome do cliente</span>
+              <span>{t("Nome do cliente")}</span>
               <input
                 className="min-h-11 w-full rounded-md border p-2"
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
-                placeholder="Ex.: Maria da Silva"
+                placeholder={t("Ex.: Maria da Silva")}
               />
             </label>
             <label className="space-y-1 text-sm">
-              <span>CPF/CNPJ</span>
+              <span>{t("CPF/CNPJ")}</span>
               <input
                 className="min-h-11 w-full rounded-md border p-2"
                 value={cpfCnpj}
                 onChange={(e) => setCpfCnpj(e.target.value)}
                 inputMode="numeric"
-                placeholder="CPF ou CNPJ"
+                placeholder={t("CPF ou CNPJ")}
               />
             </label>
             <label className="space-y-1 text-sm">
-              <span>E-mail</span>
+              <span>{t("E-mail")}</span>
               <input
                 type="email"
                 className="min-h-11 w-full rounded-md border p-2"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Opcional"
+                placeholder={t("Opcional")}
               />
             </label>
             <label className="space-y-1 text-sm">
-              <span>Telefone</span>
+              <span>{t("Telefone")}</span>
               <input
                 className="min-h-11 w-full rounded-md border p-2"
                 value={telefone}
                 onChange={(e) => setTelefone(e.target.value)}
                 inputMode="tel"
-                placeholder="Opcional"
+                placeholder={t("Opcional")}
               />
             </label>
             <label className="space-y-1 text-sm">
-              <span>Tipo de cobrança</span>
+              <span>{t("Tipo de cobrança")}</span>
               <select
                 className="min-h-11 w-full rounded-md border p-2"
                 value={modo}
                 onChange={(e) => setModo(e.target.value as Modo)}
               >
-                <option value="single">Avulsa</option>
-                <option value="installment">Parcelada</option>
-                <option value="subscription">Recorrente / mensalidade</option>
+                <option value="single">{t("Avulsa")}</option>
+                <option value="installment">{t("Parcelada")}</option>
+                <option value="subscription">{t("Recorrente / mensalidade")}</option>
               </select>
             </label>
             <label className="space-y-1 text-sm">
-              <span>Valor {modo === "installment" ? "total" : ""}</span>
+              <span>{modo === "installment" ? t("Valor total") : t("Valor")}</span>
               <input
                 className="min-h-11 w-full rounded-md border p-2"
                 value={valor}
                 onChange={(e) => setValor(e.target.value)}
                 inputMode="decimal"
-                placeholder="Ex.: 150,00"
+                placeholder={t("Ex.: 150,00")}
               />
             </label>
             <label className="space-y-1 text-sm">
-              <span>{modo === "subscription" ? "Primeiro vencimento" : "Vencimento"}</span>
+              <span>{modo === "subscription" ? t("Primeiro vencimento") : t("Vencimento")}</span>
               <input
                 type="date"
                 className="min-h-11 w-full rounded-md border p-2"
@@ -613,22 +615,22 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
               />
             </label>
             <label className="space-y-1 text-sm">
-              <span>Forma de cobrança</span>
+              <span>{t("Forma de cobrança")}</span>
               <select
                 className="min-h-11 w-full rounded-md border p-2"
                 value={tipo}
                 onChange={(e) => setTipo(e.target.value as Cobranca["billing_type"])}
               >
-                <option value="PIX">Pix</option>
-                <option value="BOLETO">Boleto</option>
-                <option value="CREDIT_CARD">Cartão</option>
-                <option value="UNDEFINED">Cliente escolhe</option>
+                <option value="PIX">{t("Pix")}</option>
+                <option value="BOLETO">{t("Boleto")}</option>
+                <option value="CREDIT_CARD">{t("Cartão")}</option>
+                <option value="UNDEFINED">{t("Cliente escolhe")}</option>
               </select>
             </label>
 
             {modo === "installment" ? (
               <label className="space-y-1 text-sm">
-                <span>Número de parcelas</span>
+                <span>{t("Número de parcelas")}</span>
                 <input
                   className="min-h-11 w-full rounded-md border p-2"
                   value={parcelas}
@@ -643,7 +645,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
             {modo === "subscription" ? (
               <>
                 <label className="space-y-1 text-sm">
-                  <span>Periodicidade</span>
+                  <span>{t("Periodicidade")}</span>
                   <select
                     className="min-h-11 w-full rounded-md border p-2"
                     value={cycle}
@@ -651,32 +653,32 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
                   >
                     {Object.entries(CICLO).map(([value, label]) => (
                       <option key={value} value={value}>
-                        {label}
+                        {t(label)}
                       </option>
                     ))}
                   </select>
                 </label>
                 <label className="space-y-1 text-sm">
-                  <span>Quantidade máxima</span>
+                  <span>{t("Quantidade máxima")}</span>
                   <input
                     className="min-h-11 w-full rounded-md border p-2"
                     value={maxPayments}
                     onChange={(e) => setMaxPayments(e.target.value)}
                     inputMode="numeric"
-                    placeholder="Vazio = sem limite"
+                    placeholder={t("Vazio = sem limite")}
                   />
                 </label>
               </>
             ) : null}
 
             <label className="space-y-1 text-sm">
-              <span>Conta financeira</span>
+              <span>{t("Conta financeira")}</span>
               <select
                 className="min-h-11 w-full rounded-md border p-2"
                 value={contaId}
                 onChange={(e) => setContaId(e.target.value)}
               >
-                <option value="">Selecione</option>
+                <option value="">{t("Selecione")}</option>
                 {(contas.data ?? []).map((conta) => (
                   <option key={conta.id} value={conta.id}>
                     {conta.name}
@@ -685,13 +687,13 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
               </select>
             </label>
             <label className="space-y-1 text-sm">
-              <span>Plano de contas</span>
+              <span>{t("Plano de contas")}</span>
               <select
                 className="min-h-11 w-full rounded-md border p-2"
                 value={planoId}
                 onChange={(e) => setPlanoId(e.target.value)}
               >
-                <option value="">Sem classificação</option>
+                <option value="">{t("Sem classificação")}</option>
                 {planosEntrada.map((plano) => (
                   <option key={plano.id} value={plano.id}>
                     {plano.name}
@@ -702,32 +704,30 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
           </div>
 
           <label className="block space-y-1 text-sm">
-            <span>Descrição</span>
+            <span>{t("Descrição")}</span>
             <input
               className="min-h-11 w-full rounded-md border p-2"
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
-              placeholder="Ex.: Honorários, consulta, mensalidade..."
+              placeholder={t("Ex.: Honorários, consulta, mensalidade...")}
             />
           </label>
 
           <div className="flex flex-wrap items-center gap-3">
             <Button disabled={!podeEnviar || criar.isPending} onClick={() => criar.mutate()}>
-              {criar.isPending ? "Gerando…" : "Gerar cobrança"}
+              {criar.isPending ? t("Gerando…") : t("Gerar cobrança")}
             </Button>
             {valorCentavos > 0 ? (
               <span className="text-sm text-text-muted">
                 {dinheiro(valorCentavos)}
-                {modo === "installment" && numeroParcelas >= 2
-                  ? ` em ${numeroParcelas}x`
-                  : ""}
+                {modo === "installment" && numeroParcelas >= 2 ? ` · ${numeroParcelas}x` : ""}
               </span>
             ) : null}
           </div>
         </section>
       ) : (
         <section className="rounded-xl border p-4 text-sm text-text-muted">
-          Seu perfil pode consultar cobranças, mas não criar novas.
+          {t("Seu perfil pode consultar cobranças, mas não criar novas.")}
         </section>
       )}
 
@@ -737,8 +737,8 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
             <h2 className="font-semibold">{resultado.title}</h2>
             <p className="text-sm text-text-muted">
               {firstPayment
-                ? `Primeira cobrança: ${STATUS[firstPayment.status] ?? firstPayment.status}`
-                : "O Asaas criará as cobranças conforme o calendário configurado."}
+                ? <>{t("Primeira cobrança")}: {STATUS[firstPayment.status] ? t(STATUS[firstPayment.status]!) : firstPayment.status}</>
+                : t("O Asaas criará as cobranças conforme o calendário configurado.")}
             </p>
           </div>
 
@@ -748,19 +748,19 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`data:image/png;base64,${resultado.pix.encodedImage}`}
-                  alt="QR Code Pix"
+                  alt={t("QR Code Pix")}
                   className="h-auto w-full"
                 />
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-medium">Pix copia e cola</p>
+                <p className="text-sm font-medium">{t("Pix copia e cola")}</p>
                 <textarea
                   readOnly
                   className="min-h-28 w-full rounded-md border p-2 text-xs"
                   value={resultado.pix.payload}
                 />
                 <Button variant="ghost" onClick={() => void copiarPixNovo()}>
-                  {copiado ? "Copiado" : "Copiar código Pix"}
+                  {copiado ? t("Copiado") : t("Copiar código Pix")}
                 </Button>
               </div>
             </div>
@@ -777,7 +777,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
               rel="noreferrer"
               className="text-sm font-medium underline"
             >
-              Abrir primeira cobrança
+              {t("Abrir primeira cobrança")}
             </a>
           ) : null}
         </section>
@@ -786,44 +786,44 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
       <section className="space-y-3 rounded-xl border p-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="font-semibold">Cobranças</h2>
+            <h2 className="font-semibold">{t("Cobranças")}</h2>
             <p className="text-sm text-text-muted">
-              Status atualizado pelos webhooks do Asaas.
+              {t("Status atualizado pelos webhooks do Asaas.")}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <select
-              aria-label="Filtrar por status"
+              aria-label={t("Filtrar por status")}
               className="min-h-11 rounded-md border p-2 text-sm"
               value={filtro}
               onChange={(e) => setFiltro(e.target.value as Categoria)}
             >
-              <option value="all">Todos os status</option>
-              <option value="pending">Pendentes</option>
-              <option value="received">Pagos</option>
-              <option value="overdue">Vencidos</option>
-              <option value="refunded">Estornados</option>
+              <option value="all">{t("Todos os status")}</option>
+              <option value="pending">{t("Pendentes")}</option>
+              <option value="received">{t("Pagos")}</option>
+              <option value="overdue">{t("Vencidos")}</option>
+              <option value="refunded">{t("Estornados")}</option>
             </select>
             <select
-              aria-label="Filtrar por forma de pagamento"
+              aria-label={t("Filtrar por forma de pagamento")}
               className="min-h-11 rounded-md border p-2 text-sm"
               value={filtroTipo}
               onChange={(e) =>
                 setFiltroTipo(e.target.value as "all" | Cobranca["billing_type"])
               }
             >
-              <option value="all">Todas as formas</option>
-              <option value="PIX">Pix</option>
-              <option value="BOLETO">Boleto</option>
-              <option value="CREDIT_CARD">Cartão</option>
-              <option value="UNDEFINED">Cliente escolhe</option>
+              <option value="all">{t("Todas as formas")}</option>
+              <option value="PIX">{t("Pix")}</option>
+              <option value="BOLETO">{t("Boleto")}</option>
+              <option value="CREDIT_CARD">{t("Cartão")}</option>
+              <option value="UNDEFINED">{t("Cliente escolhe")}</option>
             </select>
             <Button
               variant="ghost"
               disabled={cobrancas.isFetching}
               onClick={() => void cobrancas.refetch()}
             >
-              {cobrancas.isFetching ? "Atualizando…" : "Atualizar"}
+              {cobrancas.isFetching ? t("Atualizando…") : t("Atualizar")}
             </Button>
           </div>
         </div>
@@ -834,10 +834,10 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
           </p>
         ) : null}
 
-        {cobrancas.isLoading ? <p className="text-sm">Carregando…</p> : null}
+        {cobrancas.isLoading ? <p className="text-sm">{t("Carregando…")}</p> : null}
 
         {!cobrancas.isLoading && filtradas.length === 0 ? (
-          <p className="text-sm text-text-muted">Nenhuma cobrança neste filtro.</p>
+          <p className="text-sm text-text-muted">{t("Nenhuma cobrança neste filtro.")}</p>
         ) : null}
 
         <div className="space-y-2">
@@ -848,29 +848,29 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
             >
               <div className="min-w-0">
                 <p className="font-medium">
-                  {dinheiro(Number(cobranca.amount_cents))} · {TIPO[cobranca.billing_type]}
-                  {cobranca.installment_number ? ` · parcela ${cobranca.installment_number}` : ""}
+                  {dinheiro(Number(cobranca.amount_cents))} · {t(TIPO[cobranca.billing_type])}
+                  {cobranca.installment_number ? <> · {t("parcela")} {cobranca.installment_number}</> : null}
                 </p>
                 <p className="text-sm text-text-muted">
-                  {cobranca.description || "Sem descrição"} · vence em {cobranca.due_date}
+                  {cobranca.description || t("Sem descrição")} · {t("vence em")} {cobranca.due_date}
                 </p>
                 <div className="mt-1 flex flex-wrap gap-2 text-xs">
                   {cobranca.contact_id ? (
                     <Link className="underline" href={`/app/contacts/${cobranca.contact_id}`}>
-                      Abrir contato
+                      {t("Abrir contato")}
                     </Link>
                   ) : null}
-                  {cobranca.installment_id ? <span>Parcelamento</span> : null}
-                  {cobranca.subscription_id ? <span>Recorrente</span> : null}
+                  {cobranca.installment_id ? <span>{t("Parcelamento")}</span> : null}
+                  {cobranca.subscription_id ? <span>{t("Recorrente")}</span> : null}
                   {cobranca.needs_reconciliation ? (
-                    <span className="text-warning-fg">Precisa de conferência manual</span>
+                    <span className="text-warning-fg">{t("Precisa de conferência manual")}</span>
                   ) : null}
                 </div>
               </div>
 
               <div className="flex flex-wrap items-center justify-end gap-2">
                 <span className="text-sm font-medium">
-                  {STATUS[cobranca.status] ?? cobranca.status}
+                  {STATUS[cobranca.status] ? t(STATUS[cobranca.status]!) : cobranca.status}
                 </span>
                 {cobranca.invoice_url ? (
                   <a
@@ -879,7 +879,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
                     rel="noreferrer"
                     className="rounded-md border px-3 py-2 text-xs font-medium"
                   >
-                    Segunda via
+                    {t("Segunda via")}
                   </a>
                 ) : null}
                 {cobranca.billing_type === "PIX" && cobranca.asaas_payment_id ? (
@@ -888,7 +888,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
                     disabled={copiarPixExistente.isPending}
                     onClick={() => copiarPixExistente.mutate(cobranca.id)}
                   >
-                    Copiar Pix
+                    {t("Copiar Pix")}
                   </Button>
                 ) : null}
                 {cobranca.contact_id && cobranca.invoice_url && podeCobrar ? (
@@ -897,7 +897,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
                     disabled={enviarWhatsApp.isPending}
                     onClick={() => enviarWhatsApp.mutate(cobranca.id)}
                   >
-                    Enviar WhatsApp
+                    {t("Enviar WhatsApp")}
                   </Button>
                 ) : null}
               </div>
@@ -908,14 +908,14 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
 
       <section className="space-y-3 rounded-xl border p-4">
         <div>
-          <h2 className="font-semibold">Recorrências / mensalidades</h2>
+          <h2 className="font-semibold">{t("Recorrências / mensalidades")}</h2>
           <p className="text-sm text-text-muted">
-            O Asaas gera novas cobranças automaticamente conforme a periodicidade.
+            {t("O Asaas gera novas cobranças automaticamente conforme a periodicidade.")}
           </p>
         </div>
-        {assinaturas.isLoading ? <p className="text-sm">Carregando…</p> : null}
+        {assinaturas.isLoading ? <p className="text-sm">{t("Carregando…")}</p> : null}
         {!assinaturas.isLoading && (assinaturas.data?.length ?? 0) === 0 ? (
-          <p className="text-sm text-text-muted">Nenhuma recorrência criada.</p>
+          <p className="text-sm text-text-muted">{t("Nenhuma recorrência criada.")}</p>
         ) : null}
         <div className="space-y-2">
           {(assinaturas.data ?? []).map((assinatura) => (
@@ -925,11 +925,11 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
             >
               <div>
                 <p className="font-medium">
-                  {assinatura.description || "Mensalidade"} · {dinheiro(Number(assinatura.amount_cents))}
+                  {assinatura.description || t("Mensalidade")} · {dinheiro(Number(assinatura.amount_cents))}
                 </p>
                 <p className="text-sm text-text-muted">
-                  {CICLO[assinatura.cycle]} · próximo vencimento {assinatura.next_due_date}
-                  {assinatura.max_payments ? ` · até ${assinatura.max_payments} cobranças` : ""}
+                  {t(CICLO[assinatura.cycle])} · {t("próximo vencimento")} {assinatura.next_due_date}
+                  {assinatura.max_payments ? <> · {t("até")} {assinatura.max_payments} {t("cobranças")}</> : null}
                 </p>
               </div>
               <span className="text-sm font-medium">{assinatura.status}</span>
