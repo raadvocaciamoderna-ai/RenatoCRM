@@ -75,6 +75,10 @@ export const webhookAsaasSchema = z.object({
       clientPaymentDate: z.string().nullish(),
       invoiceUrl: z.string().url().nullish(),
       externalReference: z.string().nullish(),
+      description: z.string().nullish(),
+      installment: z.string().nullish(),
+      subscription: z.string().nullish(),
+      installmentNumber: z.number().int().positive().nullish(),
     })
     .passthrough(),
 });
