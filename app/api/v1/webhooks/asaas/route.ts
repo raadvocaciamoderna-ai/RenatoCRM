@@ -151,41 +151,54 @@ export async function POST(req: NextRequest): Promise<Response> {
     }
 
     if (subscription) {
-      const { data: adopted, error: adoptError } = await admin
+      const row = {
+        organization_id: subscription.organization_id,
+        contact_id: subscription.contact_id,
+        asaas_payment_id: event.payment.id,
+        asaas_customer_id: event.payment.customer ?? subscription.asaas_customer_id,
+        external_reference: `asaas-webhook:${event.payment.id}`,
+        subscription_id: event.payment.subscription,
+        billing_type: event.payment.billingType ?? subscription.billing_type,
+        amount_cents:
+          typeof event.payment.value === "number"
+            ? Math.round(event.payment.value * 100)
+            : subscription.amount_cents,
+        due_date: event.payment.dueDate ?? subscription.next_due_date,
+        description: event.payment.description ?? subscription.description,
+        status: event.payment.status ?? "PENDING",
+        invoice_url: event.payment.invoiceUrl ?? null,
+        account_id: subscription.account_id,
+        account_plan_id: subscription.account_plan_id,
+        created_by_user_id: subscription.created_by_user_id,
+      };
+      const inserted = await admin
         .from("asaas_payments")
-        .upsert(
-          {
-            organization_id: subscription.organization_id,
-            contact_id: subscription.contact_id,
-            asaas_payment_id: event.payment.id,
-            asaas_customer_id: event.payment.customer ?? subscription.asaas_customer_id,
-            external_reference: `asaas-webhook:${event.payment.id}`,
-            subscription_id: event.payment.subscription,
-            billing_type: event.payment.billingType ?? subscription.billing_type,
-            amount_cents:
-              typeof event.payment.value === "number"
-                ? Math.round(event.payment.value * 100)
-                : subscription.amount_cents,
-            due_date: event.payment.dueDate ?? subscription.next_due_date,
-            description: event.payment.description ?? subscription.description,
-            status: event.payment.status ?? "PENDING",
-            invoice_url: event.payment.invoiceUrl ?? null,
-            account_id: subscription.account_id,
-            account_plan_id: subscription.account_plan_id,
-            created_by_user_id: subscription.created_by_user_id,
-          },
-          { onConflict: "asaas_payment_id" },
-        )
+        .insert(row)
         .select(
           "id, organization_id, asaas_payment_id, external_reference, status, financial_entry_id, reversal_entry_id",
         )
-        .single();
+        .maybeSingle();
 
-      if (adoptError) {
-        await failEvent(event.id, adoptError.message, subscription.organization_id);
-        return fail("internal_error", adoptError.message, 500, { requestId });
+      if (inserted.error && inserted.error.code !== "23505") {
+        await failEvent(event.id, inserted.error.message, subscription.organization_id);
+        return fail("internal_error", inserted.error.message, 500, { requestId });
       }
-      localPayment = adopted;
+      if (inserted.data) {
+        localPayment = inserted.data;
+      } else {
+        const existingGenerated = await admin
+          .from("asaas_payments")
+          .select(
+            "id, organization_id, asaas_payment_id, external_reference, status, financial_entry_id, reversal_entry_id",
+          )
+          .eq("asaas_payment_id", event.payment.id)
+          .maybeSingle();
+        if (existingGenerated.error) {
+          await failEvent(event.id, existingGenerated.error.message, subscription.organization_id);
+          return fail("internal_error", existingGenerated.error.message, 500, { requestId });
+        }
+        localPayment = existingGenerated.data;
+      }
     }
   }
 
@@ -208,42 +221,55 @@ export async function POST(req: NextRequest): Promise<Response> {
         1,
         Math.round(installment.total_amount_cents / installment.installment_count),
       );
-      const { data: adopted, error: adoptError } = await admin
+      const row = {
+        organization_id: installment.organization_id,
+        contact_id: installment.contact_id,
+        asaas_payment_id: event.payment.id,
+        asaas_customer_id: event.payment.customer ?? installment.asaas_customer_id,
+        external_reference: `asaas-webhook:${event.payment.id}`,
+        installment_id: event.payment.installment,
+        installment_number: event.payment.installmentNumber ?? null,
+        billing_type: event.payment.billingType ?? installment.billing_type,
+        amount_cents:
+          typeof event.payment.value === "number"
+            ? Math.round(event.payment.value * 100)
+            : fallbackAmount,
+        due_date: event.payment.dueDate ?? installment.first_due_date,
+        description: event.payment.description ?? installment.description,
+        status: event.payment.status ?? "PENDING",
+        invoice_url: event.payment.invoiceUrl ?? null,
+        account_id: installment.account_id,
+        account_plan_id: installment.account_plan_id,
+        created_by_user_id: installment.created_by_user_id,
+      };
+      const inserted = await admin
         .from("asaas_payments")
-        .upsert(
-          {
-            organization_id: installment.organization_id,
-            contact_id: installment.contact_id,
-            asaas_payment_id: event.payment.id,
-            asaas_customer_id: event.payment.customer ?? installment.asaas_customer_id,
-            external_reference: `asaas-webhook:${event.payment.id}`,
-            installment_id: event.payment.installment,
-            installment_number: event.payment.installmentNumber ?? null,
-            billing_type: event.payment.billingType ?? installment.billing_type,
-            amount_cents:
-              typeof event.payment.value === "number"
-                ? Math.round(event.payment.value * 100)
-                : fallbackAmount,
-            due_date: event.payment.dueDate ?? installment.first_due_date,
-            description: event.payment.description ?? installment.description,
-            status: event.payment.status ?? "PENDING",
-            invoice_url: event.payment.invoiceUrl ?? null,
-            account_id: installment.account_id,
-            account_plan_id: installment.account_plan_id,
-            created_by_user_id: installment.created_by_user_id,
-          },
-          { onConflict: "asaas_payment_id" },
-        )
+        .insert(row)
         .select(
           "id, organization_id, asaas_payment_id, external_reference, status, financial_entry_id, reversal_entry_id",
         )
-        .single();
+        .maybeSingle();
 
-      if (adoptError) {
-        await failEvent(event.id, adoptError.message, installment.organization_id);
-        return fail("internal_error", adoptError.message, 500, { requestId });
+      if (inserted.error && inserted.error.code !== "23505") {
+        await failEvent(event.id, inserted.error.message, installment.organization_id);
+        return fail("internal_error", inserted.error.message, 500, { requestId });
       }
-      localPayment = adopted;
+      if (inserted.data) {
+        localPayment = inserted.data;
+      } else {
+        const existingGenerated = await admin
+          .from("asaas_payments")
+          .select(
+            "id, organization_id, asaas_payment_id, external_reference, status, financial_entry_id, reversal_entry_id",
+          )
+          .eq("asaas_payment_id", event.payment.id)
+          .maybeSingle();
+        if (existingGenerated.error) {
+          await failEvent(event.id, existingGenerated.error.message, installment.organization_id);
+          return fail("internal_error", existingGenerated.error.message, 500, { requestId });
+        }
+        localPayment = existingGenerated.data;
+      }
     }
   }
 
