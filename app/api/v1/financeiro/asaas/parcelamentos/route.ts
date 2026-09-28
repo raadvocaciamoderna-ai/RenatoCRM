@@ -114,7 +114,13 @@ export async function POST(req: NextRequest): Promise<Response> {
     }
   }
 
-  let payments;
+  if (!remoteId) {
+    return fail("asaas_local_sync_failed", "O Asaas não devolveu o identificador do parcelamento.", 500, {
+      requestId,
+    });
+  }
+
+  let payments: Awaited<ReturnType<typeof listAsaasInstallmentPayments>>;
   try {
     payments = await listAsaasInstallmentPayments(remoteId);
   } catch (error) {
