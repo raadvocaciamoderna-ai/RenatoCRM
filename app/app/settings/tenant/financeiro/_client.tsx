@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { useT } from "@/hooks/i18n/useT";
 import { apiClient } from "@/lib/api/client";
 
+import { AsaasIntegracao } from "./_asaas";
 import { RegrasDeComissao, type Pessoa, type Regra, type Servico } from "./_comissao";
 import { Recorrencias, type Recorrencia } from "./_recorrencias";
 
@@ -89,6 +90,8 @@ export function CatalogoFinanceiro({ podeEditar }: { podeEditar: boolean }) {
 
   return (
     <div className="space-y-4" data-testid="catalogo-financeiro">
+      <AsaasIntegracao podeEditar={podeEditar} />
+
       {/* ─── contas ─────────────────────────────────────────────────── */}
       <section className="space-y-3 rounded-xl border p-4">
         <h2 className="font-semibold">{t("Contas")}</h2>
