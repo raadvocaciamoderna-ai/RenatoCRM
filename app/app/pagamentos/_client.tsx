@@ -185,6 +185,20 @@ function categoria(status: string): Exclude<Categoria, "all"> {
   return "pending";
 }
 
+function statusVariant(status: string): "success" | "warning" | "error" | "info" | "neutral" {
+  const cat = categoria(status);
+  if (cat === "received") return "success";
+  if (cat === "overdue" || cat === "failed") return "error";
+  if (cat === "pending") return "warning";
+  if (cat === "refunded") return "neutral";
+  return "info";
+}
+
+function dataBr(value: string): string {
+  const [ano, mes, dia] = value.split("-");
+  return ano && mes && dia ? `${dia}/${mes}/${ano}` : value;
+}
+
 export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
   const t = useT();
   const qc = useQueryClient();
@@ -930,9 +944,20 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
         </div>
 
         {mensagemAcao ? (
-          <p role="status" className="text-sm text-text-muted">
-            {mensagemAcao}
-          </p>
+          <div
+            role="status"
+            className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-success/20 bg-success-bg px-3 py-2 text-sm text-success-fg"
+          >
+            <span>{mensagemAcao}</span>
+            {conversaEnviadaId ? (
+              <Button asChild variant="ghost" size="sm">
+                <Link href={`/app/inbox?id=${conversaEnviadaId}`}>
+                  <ChatCircle size={15} aria-hidden />
+                  {t("Abrir conversa no Inbox")}
+                </Link>
+              </Button>
+            ) : null}
+          </div>
         ) : null}
 
         {cobrancas.isLoading ? <p className="text-sm">{t("Carregando…")}</p> : null}
@@ -941,69 +966,114 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
           <p className="text-sm text-text-muted">{t("Nenhuma cobrança neste filtro.")}</p>
         ) : null}
 
-        <div className="space-y-2">
-          {filtradas.map((cobranca) => (
-            <article
-              key={cobranca.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
-            >
-              <div className="min-w-0">
-                <p className="font-medium">
-                  {dinheiro(Number(cobranca.amount_cents))} · {t(TIPO[cobranca.billing_type])}
-                  {cobranca.installment_number ? <> · {t("parcela")} {cobranca.installment_number}</> : null}
-                </p>
-                <p className="text-sm text-text-muted">
-                  {cobranca.description || t("Sem descrição")} · {t("vence em")} {cobranca.due_date}
-                </p>
-                <div className="mt-1 flex flex-wrap gap-2 text-xs">
-                  {cobranca.contact_id ? (
-                    <Link className="underline" href={`/app/contacts/${cobranca.contact_id}`}>
-                      {t("Abrir contato")}
-                    </Link>
-                  ) : null}
-                  {cobranca.installment_id ? <span>{t("Parcelamento")}</span> : null}
-                  {cobranca.subscription_id ? <span>{t("Recorrente")}</span> : null}
-                  {cobranca.needs_reconciliation ? (
-                    <span className="text-warning-fg">{t("Precisa de conferência manual")}</span>
-                  ) : null}
-                </div>
-              </div>
+        <div className="space-y-3">
+          {filtradas.map((cobranca) => {
+            const cliente = cobranca.contact;
+            return (
+              <article
+                key={cobranca.id}
+                className="rounded-lg border border-border bg-surface p-4 shadow-xs transition-colors hover:border-border-strong"
+              >
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-lg font-semibold tabular-nums">
+                        {dinheiro(Number(cobranca.amount_cents))}
+                      </p>
+                      <Badge variant={statusVariant(cobranca.status)}>
+                        {STATUS[cobranca.status] ? t(STATUS[cobranca.status]!) : cobranca.status}
+                      </Badge>
+                      <Badge variant="neutral">{t(TIPO[cobranca.billing_type])}</Badge>
+                      {cobranca.installment_number ? (
+                        <Badge variant="neutral">{t("parcela")} {cobranca.installment_number}</Badge>
+                      ) : null}
+                    </div>
 
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                <span className="text-sm font-medium">
-                  {STATUS[cobranca.status] ? t(STATUS[cobranca.status]!) : cobranca.status}
-                </span>
-                {cobranca.invoice_url ? (
-                  <a
-                    href={cobranca.invoice_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-md border px-3 py-2 text-xs font-medium"
-                  >
-                    {t("Segunda via")}
-                  </a>
-                ) : null}
-                {cobranca.billing_type === "PIX" && cobranca.asaas_payment_id ? (
-                  <Button
-                    variant="ghost"
-                    disabled={copiarPixExistente.isPending}
-                    onClick={() => copiarPixExistente.mutate(cobranca.id)}
-                  >
-                    {t("Copiar Pix")}
-                  </Button>
-                ) : null}
-                {cobranca.contact_id && cobranca.invoice_url && podeCobrar ? (
-                  <Button
-                    variant="ghost"
-                    disabled={enviarWhatsApp.isPending}
-                    onClick={() => enviarWhatsApp.mutate(cobranca.id)}
-                  >
-                    {t("Enviar WhatsApp")}
-                  </Button>
-                ) : null}
-              </div>
-            </article>
-          ))}
+                    <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
+                          {t("Cliente")}
+                        </p>
+                        {cliente && cobranca.contact_id ? (
+                          <div className="mt-1">
+                            <Link
+                              href={`/app/contacts/${cobranca.contact_id}`}
+                              className="font-medium text-text underline-offset-4 hover:text-accent hover:underline"
+                            >
+                              {rotuloContato(cliente)}
+                            </Link>
+                            <p className="mt-0.5 text-sm text-text-muted">
+                              {[cliente.phone_number, cliente.email].filter(Boolean).join(" · ")}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="mt-1 text-sm text-text-muted">{t("Cobrança sem contato vinculado")}</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
+                          {t("Detalhes")}
+                        </p>
+                        <p className="mt-1 text-sm">
+                          {cobranca.description || t("Sem descrição")}
+                        </p>
+                        <p className="mt-0.5 text-sm text-text-muted">
+                          {t("Vencimento")}: {dataBr(cobranca.due_date)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-text-muted">
+                      {cobranca.installment_id ? <span>{t("Parcelamento")}</span> : null}
+                      {cobranca.subscription_id ? <span>{t("Recorrente")}</span> : null}
+                      {cobranca.needs_reconciliation ? (
+                        <span className="font-medium text-warning-fg">{t("Precisa de conferência manual")}</span>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="flex shrink-0 flex-wrap gap-2 xl:max-w-sm xl:justify-end">
+                    {cobranca.contact_id ? (
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/app/contacts/${cobranca.contact_id}`}>
+                          <Users size={15} aria-hidden />
+                          {t("Cliente")}
+                        </Link>
+                      </Button>
+                    ) : null}
+                    {cobranca.invoice_url ? (
+                      <Button asChild variant="outline" size="sm">
+                        <a href={cobranca.invoice_url} target="_blank" rel="noreferrer">
+                          <ArrowSquareOut size={15} aria-hidden />
+                          {t("Segunda via")}
+                        </a>
+                      </Button>
+                    ) : null}
+                    {cobranca.billing_type === "PIX" && cobranca.asaas_payment_id ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={copiarPixExistente.isPending}
+                        onClick={() => copiarPixExistente.mutate(cobranca.id)}
+                      >
+                        {t("Copiar Pix")}
+                      </Button>
+                    ) : null}
+                    {cobranca.contact_id && cobranca.invoice_url && podeCobrar ? (
+                      <Button
+                        size="sm"
+                        disabled={enviarWhatsApp.isPending}
+                        onClick={() => enviarWhatsApp.mutate(cobranca.id)}
+                      >
+                        <WhatsappLogo size={15} aria-hidden />
+                        {t("Enviar WhatsApp")}
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </section>
 
@@ -1022,18 +1092,43 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
           {(assinaturas.data ?? []).map((assinatura) => (
             <div
               key={assinatura.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
+              className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 md:flex-row md:items-center md:justify-between"
             >
-              <div>
-                <p className="font-medium">
-                  {assinatura.description || t("Mensalidade")} · {dinheiro(Number(assinatura.amount_cents))}
-                </p>
-                <p className="text-sm text-text-muted">
-                  {t(CICLO[assinatura.cycle])} · {t("próximo vencimento")} {assinatura.next_due_date}
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold">
+                    {assinatura.description || t("Mensalidade")} · {dinheiro(Number(assinatura.amount_cents))}
+                  </p>
+                  <Badge variant={assinatura.status === "ACTIVE" ? "success" : "neutral"}>
+                    {assinatura.status}
+                  </Badge>
+                </div>
+                {assinatura.contact && assinatura.contact_id ? (
+                  <p className="mt-1 text-sm">
+                    <Link
+                      href={`/app/contacts/${assinatura.contact_id}`}
+                      className="font-medium underline-offset-4 hover:text-accent hover:underline"
+                    >
+                      {rotuloContato(assinatura.contact)}
+                    </Link>
+                    {assinatura.contact.phone_number ? (
+                      <span className="text-text-muted"> · {assinatura.contact.phone_number}</span>
+                    ) : null}
+                  </p>
+                ) : null}
+                <p className="mt-1 text-sm text-text-muted">
+                  {t(CICLO[assinatura.cycle])} · {t("próximo vencimento")} {dataBr(assinatura.next_due_date)}
                   {assinatura.max_payments ? <> · {t("até")} {assinatura.max_payments} {t("cobranças")}</> : null}
                 </p>
               </div>
-              <span className="text-sm font-medium">{assinatura.status}</span>
+              {assinatura.contact_id ? (
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/app/contacts/${assinatura.contact_id}`}>
+                    <Users size={15} aria-hidden />
+                    {t("Ver cliente")}
+                  </Link>
+                </Button>
+              ) : null}
             </div>
           ))}
         </div>
