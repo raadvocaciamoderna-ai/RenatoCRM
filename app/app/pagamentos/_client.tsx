@@ -484,19 +484,51 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
 
   return (
     <div className="space-y-4">
-      <section className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border p-4">
-          <p className="text-xs uppercase text-text-muted">{t("A receber")}</p>
-          <p className="mt-1 text-xl font-semibold">{dinheiro(totais.receber)}</p>
-        </div>
-        <div className="rounded-xl border p-4">
-          <p className="text-xs uppercase text-text-muted">{t("Recebido")}</p>
-          <p className="mt-1 text-xl font-semibold">{dinheiro(totais.recebido)}</p>
-        </div>
-        <div className="rounded-xl border p-4">
-          <p className="text-xs uppercase text-text-muted">{t("Vencido")}</p>
-          <p className="mt-1 text-xl font-semibold">{dinheiro(totais.vencido)}</p>
-        </div>
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Card className="overflow-hidden">
+          <CardContent className="flex items-center justify-between gap-4 p-5">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-text-muted">{t("A receber")}</p>
+              <p className="mt-2 text-2xl font-semibold tabular-nums">{dinheiro(totais.receber)}</p>
+            </div>
+            <div className="rounded-full bg-info-bg p-3 text-info-fg">
+              <ClockCountdown size={22} weight="duotone" aria-hidden />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="overflow-hidden">
+          <CardContent className="flex items-center justify-between gap-4 p-5">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-text-muted">{t("Recebido")}</p>
+              <p className="mt-2 text-2xl font-semibold tabular-nums">{dinheiro(totais.recebido)}</p>
+            </div>
+            <div className="rounded-full bg-success-bg p-3 text-success-fg">
+              <CheckCircle size={22} weight="duotone" aria-hidden />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="overflow-hidden">
+          <CardContent className="flex items-center justify-between gap-4 p-5">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-text-muted">{t("Vencido")}</p>
+              <p className="mt-2 text-2xl font-semibold tabular-nums">{dinheiro(totais.vencido)}</p>
+            </div>
+            <div className="rounded-full bg-error-bg p-3 text-error-fg">
+              <Warning size={22} weight="duotone" aria-hidden />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="overflow-hidden">
+          <CardContent className="flex items-center justify-between gap-4 p-5">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-text-muted">{t("Recorrências / mensalidades")}</p>
+              <p className="mt-2 text-2xl font-semibold tabular-nums">{assinaturas.data?.length ?? 0}</p>
+            </div>
+            <div className="rounded-full bg-accent-soft p-3 text-accent">
+              <Receipt size={22} weight="duotone" aria-hidden />
+            </div>
+          </CardContent>
+        </Card>
       </section>
 
       {podeCobrar ? (
