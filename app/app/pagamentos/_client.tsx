@@ -155,9 +155,10 @@ function rotuloContato(c: ContactSummary): string {
   return c.name?.trim() || c.display_name?.trim() || c.phone_number || "Contato";
 }
 
-type Categoria = "all" | "pending" | "received" | "overdue" | "refunded";
+type Categoria = "all" | "pending" | "received" | "overdue" | "refunded" | "failed";
 
 function categoria(status: string): Exclude<Categoria, "all"> {
+  if (status === "CREATE_FAILED") return "failed";
   if (status === "RECEIVED") return "received";
   if (status === "OVERDUE") return "overdue";
   if (status.includes("REFUND") || status.includes("CHARGEBACK")) return "refunded";
@@ -803,6 +804,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
               <option value="received">{t("Pagos")}</option>
               <option value="overdue">{t("Vencidos")}</option>
               <option value="refunded">{t("Estornados")}</option>
+              <option value="failed">{t("Falhas")}</option>
             </select>
             <select
               aria-label={t("Filtrar por forma de pagamento")}
