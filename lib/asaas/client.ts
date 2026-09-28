@@ -263,9 +263,12 @@ export async function createAsaasInstallment(input: {
   totalValue: number;
   dueDate: string;
   description?: string;
-  paymentExternalReference?: string;
-}): Promise<AsaasInstallment> {
-  return asaasRequest<AsaasInstallment>("/installments", {
+  externalReference: string;
+}): Promise<AsaasPayment> {
+  // O fluxo recomendado pelo Asaas para informar o valor TOTAL do parcelamento
+  // é POST /payments com installmentCount + totalValue. A resposta é a primeira
+  // cobrança e traz o identificador do parcelamento em `installment`.
+  return asaasRequest<AsaasPayment>("/payments", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -299,15 +302,24 @@ export async function createAsaasSubscription(input: {
 export async function listAsaasSubscriptionPayments(
   subscriptionId: string,
 ): Promise<AsaasPayment[]> {
-  const params = new URLSearchParams({
-    subscription: subscriptionId,
-    limit: "100",
-    offset: "0",
-  });
   const result = await asaasRequest<AsaasList<AsaasPayment>>(
-    `/payments?${params.toString()}`,
+    `/subscriptions/${encodeURIComponent(subscriptionId)}/payments`,
   );
   return result.data ?? [];
+}
+
+export async function findAsaasSubscriptionByExternalReference(
+  externalReference: string,
+): Promise<AsaasSubscription | null> {
+  const params = new URLSearchParams({
+    externalReference,
+    limit: "1",
+    offset: "0",
+  });
+  const result = await asaasRequest<AsaasList<AsaasSubscription>>(
+    `/subscriptions?${params.toString()}`,
+  );
+  return result.data?.[0] ?? null;
 }
 
 export async function findAsaasPaymentByExternalReference(
