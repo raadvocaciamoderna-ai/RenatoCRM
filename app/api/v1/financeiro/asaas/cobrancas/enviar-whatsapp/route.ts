@@ -6,7 +6,7 @@ import { z } from "zod";
 import { sendMessageHandler } from "@/app/api/v1/messages/_handler";
 import { ok, fail } from "@/lib/api/wrappers";
 import { ApiError } from "@/lib/api/types";
-import { getAsaasPayment } from "@/lib/asaas/client";
+import { getAsaasCustomer, getAsaasPayment } from "@/lib/asaas/client";
 import { requireRole } from "@/lib/auth/require-role";
 import { openSharedContactConversation } from "@/lib/messaging/open-shared-contact-conversation";
 import { requireSupportWrite } from "@/lib/impersonate/support";
@@ -47,21 +47,13 @@ export async function POST(req: NextRequest): Promise<Response> {
   const admin = createAdminClient();
   const { data: payment, error } = await admin
     .from("asaas_payments")
-    .select("id, contact_id, asaas_payment_id, amount_cents, due_date, description, invoice_url")
+    .select("id, contact_id, asaas_payment_id, asaas_customer_id, amount_cents, due_date, description, invoice_url")
     .eq("id", parsed.data.payment_id)
     .eq("organization_id", authz.org.orgId)
     .maybeSingle();
 
   if (error) return fail("internal_error", error.message, 500, { requestId });
   if (!payment) return fail("not_found", "Cobrança não encontrada.", 404, { requestId });
-  if (!payment.contact_id) {
-    return fail(
-      "validation_failed",
-      "Esta cobrança não está vinculada a um contato do CRM.",
-      422,
-      { requestId },
-    );
-  }
   let invoiceUrl = payment.invoice_url;
   if (!invoiceUrl && payment.asaas_payment_id) {
     try {
@@ -88,25 +80,57 @@ export async function POST(req: NextRequest): Promise<Response> {
     );
   }
 
-  const { data: contact, error: contactError } = await admin
-    .from("contacts")
-    .select("id, name, display_name, phone_number")
-    .eq("id", payment.contact_id)
-    .eq("organization_id", authz.org.orgId)
-    .maybeSingle();
+  let contact:
+    | { id: string; name: string | null; display_name: string | null; phone_number: string | null }
+    | null = null;
 
-  if (contactError) return fail("internal_error", contactError.message, 500, { requestId });
-  if (!contact?.phone_number) {
-    return fail("validation_failed", "O contato não possui telefone para WhatsApp.", 422, {
+  if (payment.contact_id) {
+    const { data, error: contactError } = await admin
+      .from("contacts")
+      .select("id, name, display_name, phone_number")
+      .eq("id", payment.contact_id)
+      .eq("organization_id", authz.org.orgId)
+      .maybeSingle();
+    if (contactError) return fail("internal_error", contactError.message, 500, { requestId });
+    contact = data;
+  }
+
+  let fallbackPhone: string | null = null;
+  let fallbackName: string | null = null;
+  if (!contact?.phone_number && payment.asaas_customer_id) {
+    try {
+      const customer = await getAsaasCustomer(payment.asaas_customer_id);
+      fallbackPhone = customer.mobilePhone ?? null;
+      fallbackName = customer.name?.trim() || null;
+    } catch {
+      fallbackPhone = null;
+    }
+  }
+
+  if (!contact?.phone_number && !fallbackPhone) {
+    return fail("validation_failed", "A cobrança não possui telefone disponível para WhatsApp.", 422, {
       requestId,
     });
   }
 
   try {
-    const opened = await openSharedContactConversation(admin, authz.org.orgId, {
-      contact_id: contact.id,
-    });
-    const nome = contact.name?.trim() || contact.display_name?.trim() || "Olá";
+    const opened = await openSharedContactConversation(admin, authz.org.orgId, contact?.id
+      ? { contact_id: contact.id }
+      : { phone_number: fallbackPhone!, name: fallbackName ?? undefined });
+
+    if (!payment.contact_id && opened.contact_id) {
+      await admin
+        .from("asaas_payments")
+        .update({ contact_id: opened.contact_id })
+        .eq("id", payment.id)
+        .eq("organization_id", authz.org.orgId);
+    }
+
+    const nome =
+      contact?.name?.trim() ||
+      contact?.display_name?.trim() ||
+      fallbackName ||
+      "Olá";
     const mensagem =
       `${nome}, segue sua cobrança de ${money(Number(payment.amount_cents))} ` +
       `com vencimento em ${dataBr(payment.due_date)}.\n\n` +
