@@ -1321,7 +1321,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
         </div>
       </section>
 
-      <NewContactDialog      <NewContactDialog
+      <NewContactDialog
         open={novoContatoOpen}
         onOpenChange={setNovoContatoOpen}
         nomeInicial={buscaContato.trim() || undefined}
