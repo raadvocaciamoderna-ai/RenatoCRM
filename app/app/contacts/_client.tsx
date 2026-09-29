@@ -152,7 +152,7 @@ export function ContactsListClient({
           </Button>
           <Button onClick={() => setCreateOpen(true)}>
             <Plus size={16} weight="bold" aria-hidden />
-            <span>{t("Novo contato")}</span>
+            <span>{clientsView ? t("Novo cliente") : t("Novo contato")}</span>
           </Button>
         </div>
       </header>
@@ -227,7 +227,7 @@ export function ContactsListClient({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {(search || tag || source) && (
+        {(search || source || (!clientsView && tag)) && (
           <Button
             variant="ghost"
             size="sm"
@@ -262,9 +262,18 @@ export function ContactsListClient({
           </Button>
         </Card>
       ) : allContacts.length === 0 ? (
-        <Card className="p-2">
-          <EmptyContacts />
-        </Card>
+        clientsView ? (
+          <Card className="p-6 text-center">
+            <p className="font-medium">{t("Nenhum cliente encontrado.")}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t("Clientes usam a mesma base de Contatos; você pode criar um novo ou marcar um contato existente com a tag cliente.")}
+            </p>
+          </Card>
+        ) : (
+          <Card className="p-2">
+            <EmptyContacts />
+          </Card>
+        )
       ) : (
         <>
           <Card className="overflow-hidden">
@@ -294,7 +303,11 @@ export function ContactsListClient({
         </>
       )}
 
-      <NewContactDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <NewContactDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        tagsIniciais={clientsView ? [TAG_DE_CLIENTE] : undefined}
+      />
       <ImportContactsDialog open={importOpen} onOpenChange={setImportOpen} />
       <MergeDialog open={duplicadosOpen} onOpenChange={setDuplicadosOpen} />
     </div>
