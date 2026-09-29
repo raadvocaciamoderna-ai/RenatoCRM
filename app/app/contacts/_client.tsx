@@ -173,25 +173,27 @@ export function ContactsListClient({
           />
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" disabled={tagOptions.length === 0}>
-              {tag ? <PontoDaEtiqueta tag={tag} className="mr-2" /> : null}
-              {tag ? `${t("Tag")}: ${tag}` : `${t("Tag")}: ${t("todas")}`}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuLabel>{t("Tag")}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setTag(undefined)}>{t("Todas")}</DropdownMenuItem>
-            {tagOptions.map((tagOption) => (
-              <DropdownMenuItem key={tagOption} onClick={() => setTag(tagOption)}>
-                <PontoDaEtiqueta tag={tagOption} className="mr-2" />
-                {tagOption}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {!clientsView ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={tagOptions.length === 0}>
+                {tag ? <PontoDaEtiqueta tag={tag} className="mr-2" /> : null}
+                {tag ? `${t("Tag")}: ${tag}` : `${t("Tag")}: ${t("todas")}`}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuLabel>{t("Tag")}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setTag(undefined)}>{t("Todas")}</DropdownMenuItem>
+              {tagOptions.map((tagOption) => (
+                <DropdownMenuItem key={tagOption} onClick={() => setTag(tagOption)}>
+                  <PontoDaEtiqueta tag={tagOption} className="mr-2" />
+                  {tagOption}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
