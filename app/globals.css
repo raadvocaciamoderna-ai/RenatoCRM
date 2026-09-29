@@ -685,6 +685,44 @@
     color-scheme: light;
   }
 
+  /* Controles nativos precisam receber as cores do tema explicitamente.
+     color-scheme orienta o navegador, mas no Chrome/Windows o popup de
+     <select> ainda pode cair no branco do sistema se option/optgroup
+     não tiverem fundo e texto definidos. Como esta regra vive no base layer,
+     ela corrige TODOS os selects nativos do produto sem disputar com as
+     classes utilitárias de cada tela. */
+  select {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+  }
+
+  select option,
+  select optgroup {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+  }
+
+  select option:disabled {
+    color: var(--color-text-subtle);
+  }
+
+  select option:checked {
+    background-color: var(--color-accent);
+    color: var(--color-accent-fg);
+  }
+
+  [data-theme="dark"] select,
+  [data-theme="dark"] select option,
+  [data-theme="dark"] select optgroup {
+    color-scheme: dark;
+  }
+
+  [data-theme="light"] select,
+  [data-theme="light"] select option,
+  [data-theme="light"] select optgroup {
+    color-scheme: light;
+  }
+
   body {
     /* Mesma trava do `html` logo acima, duplicada aqui de propósito: alguns
        motores móveis (Safari/iOS em particular) ignoram `overflow-x` só no
