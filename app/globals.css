@@ -706,6 +706,11 @@
     color: var(--color-text-subtle);
   }
 
+  select option:checked {
+    background-color: var(--color-accent);
+    color: var(--color-accent-fg);
+  }
+
   [data-theme="dark"] select,
   [data-theme="dark"] select option,
   [data-theme="dark"] select optgroup {
