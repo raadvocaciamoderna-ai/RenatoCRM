@@ -6,6 +6,7 @@ import { z } from "zod";
 import { sendMessageHandler } from "@/app/api/v1/messages/_handler";
 import { ok, fail } from "@/lib/api/wrappers";
 import { ApiError } from "@/lib/api/types";
+import { getAsaasPayment } from "@/lib/asaas/client";
 import { requireRole } from "@/lib/auth/require-role";
 import { openSharedContactConversation } from "@/lib/messaging/open-shared-contact-conversation";
 import { requireSupportWrite } from "@/lib/impersonate/support";
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const admin = createAdminClient();
   const { data: payment, error } = await admin
     .from("asaas_payments")
-    .select("id, contact_id, amount_cents, due_date, description, invoice_url")
+    .select("id, contact_id, asaas_payment_id, amount_cents, due_date, description, invoice_url")
     .eq("id", parsed.data.payment_id)
     .eq("organization_id", authz.org.orgId)
     .maybeSingle();
@@ -61,7 +62,24 @@ export async function POST(req: NextRequest): Promise<Response> {
       { requestId },
     );
   }
-  if (!payment.invoice_url) {
+  let invoiceUrl = payment.invoice_url;
+  if (!invoiceUrl && payment.asaas_payment_id) {
+    try {
+      const remotePayment = await getAsaasPayment(payment.asaas_payment_id);
+      invoiceUrl = remotePayment.invoiceUrl ?? null;
+      if (invoiceUrl) {
+        await admin
+          .from("asaas_payments")
+          .update({ invoice_url: invoiceUrl })
+          .eq("id", payment.id)
+          .eq("organization_id", authz.org.orgId);
+      }
+    } catch {
+      invoiceUrl = null;
+    }
+  }
+
+  if (!invoiceUrl) {
     return fail(
       "validation_failed",
       "O Asaas ainda não disponibilizou o link desta cobrança.",
@@ -93,7 +111,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       `${nome}, segue sua cobrança de ${money(Number(payment.amount_cents))} ` +
       `com vencimento em ${dataBr(payment.due_date)}.\n\n` +
       `${payment.description ? `${payment.description}\n\n` : ""}` +
-      `${payment.invoice_url}\n\nSe já realizou o pagamento, desconsidere esta mensagem.`;
+      `${invoiceUrl}\n\nSe já realizou o pagamento, desconsidere esta mensagem.`;
 
     const sent = await sendMessageHandler(
       admin,
