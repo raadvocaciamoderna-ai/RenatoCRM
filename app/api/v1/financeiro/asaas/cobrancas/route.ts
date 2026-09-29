@@ -147,6 +147,9 @@ export async function POST(req: NextRequest): Promise<Response> {
       value: parsed.data.value_cents / 100,
       dueDate: parsed.data.due_date,
       ...(parsed.data.description ? { description: parsed.data.description } : {}),
+      ...(parsed.data.interest ? { interest: parsed.data.interest } : {}),
+      ...(parsed.data.fine ? { fine: parsed.data.fine } : {}),
+      ...(parsed.data.discount ? { discount: parsed.data.discount } : {}),
       externalReference,
     });
   } catch (error) {
