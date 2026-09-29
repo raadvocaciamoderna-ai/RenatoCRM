@@ -6491,6 +6491,9 @@ export const DICIONARIO: Traducoes = {
   "Visão dos clientes dentro da mesma base de Contatos, sem duplicar cadastros.": {
     es: "Vista de clientes dentro de la misma base de Contactos, sin duplicar registros.",
   },
+  "Veja somente os clientes dentro da mesma base de Contatos.": {
+    es: "Ve solamente los clientes dentro de la misma base de Contactos.",
+  },
   "Uma cobrança com vencimento definido.": { es: "Un cobro con fecha de vencimiento definida." },
   "Sem contato, este lead não recebe WhatsApp nem entra nas automações.": {
     es: "Sin contacto, este lead no recibe WhatsApp ni entra en las automatizaciones.",
