@@ -44,15 +44,29 @@ interface Props {
    * selecionado, em vez de mandar a pessoa procurar de novo o que acabou de criar.
    */
   onCriado?: (contato: Contact) => void;
+  /** Tags iniciais para fluxos derivados da mesma base, como a visão Clientes. */
+  tagsIniciais?: string[];
 }
 
-export function NewContactDialog({ open, onOpenChange, nomeInicial, onCriado }: Props) {
+export function NewContactDialog({
+  open,
+  onOpenChange,
+  nomeInicial,
+  onCriado,
+  tagsIniciais,
+}: Props) {
   const t = useT();
   const create = useCreateContact();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<FormShape>({
-    defaultValues: { name: nomeInicial ?? "", email: "", phone_number: "", cpf: "", tagsRaw: "" },
+    defaultValues: {
+      name: nomeInicial ?? "",
+      email: "",
+      phone_number: "",
+      cpf: "",
+      tagsRaw: tagsIniciais?.join(", ") ?? "",
+    },
   });
 
   async function onSubmit(values: FormShape) {
