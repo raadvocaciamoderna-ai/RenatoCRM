@@ -34,7 +34,7 @@ export default async function PagamentosPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline">
-            <Link href="/app/contacts">
+            <Link href="/app/clients">
               <Users size={16} aria-hidden />
               {t("Clientes")}
             </Link>

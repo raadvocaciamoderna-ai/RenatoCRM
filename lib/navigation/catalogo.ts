@@ -224,6 +224,21 @@ export const NAV_CATALOG = [
     sidebar: true,
   },
   {
+    // É uma VISÃO da mesma base de contatos, não um cadastro paralelo.
+    // A tag `cliente` é o filtro de navegação; a fonte de verdade de regras de
+    // negócio continua sendo a modelagem já existente do CRM.
+    //
+    // Sem `sidebar: true`: o menu lateral já está no limite medido e o hub do
+    // CRM + os botões Contatos/Clientes fazem esta visão ficar a um clique sem
+    // duplicar uma linha fixa no menu.
+    href: "/app/clients",
+    label: "Clientes",
+    description: "Veja somente os clientes dentro da mesma base de Contatos.",
+    icon: "UsersThree",
+    group: "crm",
+    section: "O dia a dia da venda",
+  },
+  {
     // Extraída do PR #418 (@clinicacentrodosorrisosc-code). Fica no CRM e no
     // sidebar porque é tela de USO DIÁRIO — quem atende abre para ver o que
     // vence hoje, do mesmo jeito que abre o Inbox. Sem `minRole`: `viewer` VÊ

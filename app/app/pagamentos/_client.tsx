@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { NewContactDialog } from "@/components/contacts/NewContactDialog";
 import { showApiError } from "@/components/feedback/ApiErrorToast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -204,8 +205,11 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
   const qc = useQueryClient();
   const params = useSearchParams();
 
-  const [contactId, setContactId] = useState(params.get("contact_id") ?? "");
+  const contactIdInicial = params.get("contact_id") ?? "";
+  const [origemCliente, setOrigemCliente] = useState<"crm" | "manual">("crm");
+  const [contactId, setContactId] = useState(contactIdInicial);
   const [buscaContato, setBuscaContato] = useState("");
+  const [novoContatoOpen, setNovoContatoOpen] = useState(false);
   const [nome, setNome] = useState("");
   const [cpfCnpj, setCpfCnpj] = useState("");
   const [email, setEmail] = useState("");
@@ -453,6 +457,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
   }
 
   function escolherContato(contact: ContactSummary) {
+    setOrigemCliente("crm");
     setContactId(contact.id);
     setBuscaContato("");
     setNome(contact.name?.trim() || contact.display_name?.trim() || "");
@@ -467,6 +472,13 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
     setCpfCnpj("");
     setEmail("");
     setTelefone("");
+  }
+
+  function mudarOrigemCliente(origem: "crm" | "manual") {
+    if (origem === origemCliente) return;
+    limparContato();
+    setBuscaContato("");
+    setOrigemCliente(origem);
   }
 
   const totais = useMemo(() => {
@@ -571,80 +583,129 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
             </div>
           ) : null}
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">{t("Contato do CRM")}</label>
-            {contactId && contatoSelecionado.data ? (
-              <div className="rounded-lg border border-border bg-surface-elevated/40 p-4">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex min-w-0 items-start gap-3">
-                    <div className="rounded-full bg-accent-soft p-2.5 text-accent">
-                      <Users size={20} weight="duotone" aria-hidden />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-semibold">{rotuloContato(contatoSelecionado.data)}</p>
-                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-text-muted">
-                        {contatoSelecionado.data.phone_number ? (
-                          <span className="inline-flex items-center gap-1">
-                            <WhatsappLogo size={15} aria-hidden />
-                            {contatoSelecionado.data.phone_number}
-                          </span>
-                        ) : null}
-                        {contatoSelecionado.data.email ? <span>{contatoSelecionado.data.email}</span> : null}
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm font-medium">{t("Cliente da cobrança")}</p>
+              <p className="mt-0.5 text-xs text-text-muted">
+                {t("Use um contato já existente no CRM ou informe os dados manualmente.")}
+              </p>
+            </div>
+
+            <div className="grid max-w-2xl grid-cols-2 gap-2 rounded-lg bg-surface-elevated p-1">
+              <button
+                type="button"
+                onClick={() => mudarOrigemCliente("crm")}
+                className={
+                  origemCliente === "crm"
+                    ? "rounded-md bg-surface px-3 py-2 text-sm font-medium text-text shadow-xs"
+                    : "rounded-md px-3 py-2 text-sm text-text-muted transition-colors hover:text-text"
+                }
+              >
+                {t("Selecionar no CRM")}
+              </button>
+              <button
+                type="button"
+                onClick={() => mudarOrigemCliente("manual")}
+                className={
+                  origemCliente === "manual"
+                    ? "rounded-md bg-surface px-3 py-2 text-sm font-medium text-text shadow-xs"
+                    : "rounded-md px-3 py-2 text-sm text-text-muted transition-colors hover:text-text"
+                }
+              >
+                {t("Digitar manualmente")}
+              </button>
+            </div>
+
+            {origemCliente === "crm" ? (
+              contactId && contatoSelecionado.data ? (
+                <div className="rounded-lg border border-border bg-surface-elevated/40 p-4">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <div className="rounded-full bg-accent-soft p-2.5 text-accent">
+                        <Users size={20} weight="duotone" aria-hidden />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold">{rotuloContato(contatoSelecionado.data)}</p>
+                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-text-muted">
+                          {contatoSelecionado.data.phone_number ? (
+                            <span className="inline-flex items-center gap-1">
+                              <WhatsappLogo size={15} aria-hidden />
+                              {contatoSelecionado.data.phone_number}
+                            </span>
+                          ) : null}
+                          {contatoSelecionado.data.email ? <span>{contatoSelecionado.data.email}</span> : null}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button asChild variant="outline" size="sm">
-                      <Link href={`/app/contacts/${contactId}`}>
-                        <ArrowSquareOut size={15} aria-hidden />
-                        {t("Abrir contato")}
-                      </Link>
-                    </Button>
-                    {contatoSelecionado.data.conversa?.id ? (
+                    <div className="flex flex-wrap gap-2">
                       <Button asChild variant="outline" size="sm">
-                        <Link href={`/app/inbox?id=${contatoSelecionado.data.conversa.id}`}>
-                          <ChatCircle size={15} aria-hidden />
-                          {t("Abrir conversa no Inbox")}
+                        <Link href={`/app/contacts/${contactId}`}>
+                          <ArrowSquareOut size={15} aria-hidden />
+                          {t("Abrir contato")}
                         </Link>
                       </Button>
+                      {contatoSelecionado.data.conversa?.id ? (
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/app/inbox?id=${contatoSelecionado.data.conversa.id}`}>
+                            <ChatCircle size={15} aria-hidden />
+                            {t("Abrir conversa no Inbox")}
+                          </Link>
+                        </Button>
+                      ) : null}
+                      <Button variant="ghost" size="sm" onClick={limparContato}>
+                        {t("Trocar contato")}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="relative max-w-2xl">
+                    <Input
+                      className="h-11"
+                      value={buscaContato}
+                      onChange={(e) => setBuscaContato(e.target.value)}
+                      placeholder={t("Busque pelo nome, telefone ou e-mail")}
+                    />
+                    {buscaContato.trim().length >= 2 ? (
+                      <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md border bg-card shadow-lg">
+                        {(contatos.data ?? []).map((contact) => (
+                          <button
+                            key={contact.id}
+                            type="button"
+                            onClick={() => escolherContato(contact)}
+                            className="block w-full border-b p-3 text-left last:border-b-0 hover:bg-surface-elevated"
+                          >
+                            <span className="block font-medium">{rotuloContato(contact)}</span>
+                            <span className="block text-xs text-text-muted">
+                              {[contact.phone_number, contact.email].filter(Boolean).join(" · ")}
+                            </span>
+                          </button>
+                        ))}
+                        {!contatos.isLoading && (contatos.data?.length ?? 0) === 0 ? (
+                          <p className="p-3 text-sm text-text-muted">{t("Nenhum contato encontrado.")}</p>
+                        ) : null}
+                      </div>
                     ) : null}
-                    <Button variant="ghost" size="sm" onClick={limparContato}>
-                      {t("Trocar contato")}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setNovoContatoOpen(true)}>
+                      {t("Criar novo contato")}
+                    </Button>
+                    <Button asChild variant="ghost" size="sm">
+                      <Link href="/app/clients">{t("Ver clientes")}</Link>
                     </Button>
                   </div>
                 </div>
-              </div>
+              )
             ) : (
-              <div className="relative max-w-2xl">
-                <Input
-                  className="h-11"
-                  value={buscaContato}
-                  onChange={(e) => setBuscaContato(e.target.value)}
-                  placeholder={t("Busque pelo nome, telefone ou e-mail")}
-                />
-                {buscaContato.trim().length >= 2 ? (
-                  <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md border bg-card shadow-lg">
-                    {(contatos.data ?? []).map((contact) => (
-                      <button
-                        key={contact.id}
-                        type="button"
-                        onClick={() => escolherContato(contact)}
-                        className="block w-full border-b p-3 text-left last:border-b-0 hover:bg-accent/50"
-                      >
-                        <span className="block font-medium">{rotuloContato(contact)}</span>
-                        <span className="block text-xs text-text-muted">
-                          {[contact.phone_number, contact.email].filter(Boolean).join(" · ")}
-                        </span>
-                      </button>
-                    ))}
-                    {!contatos.isLoading && (contatos.data?.length ?? 0) === 0 ? (
-                      <p className="p-3 text-sm text-text-muted">{t("Nenhum contato encontrado.")}</p>
-                    ) : null}
-                  </div>
-                ) : null}
+              <div className="rounded-lg border border-border bg-surface-elevated/30 p-3 text-sm text-text-muted">
+                {t("Os dados abaixo serão usados somente nesta cobrança, sem criar um contato automaticamente.")}
               </div>
             )}
-            {contactId &&
+
+            {origemCliente === "crm" &&
+            contactId &&
             contatoSelecionado.data?.cpf_available &&
             !contatoSelecionado.data.cpf_decrypted ? (
               <p className="text-xs text-text-muted">
@@ -1088,6 +1149,13 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
           })}
         </div>
       </section>
+
+      <NewContactDialog
+        open={novoContatoOpen}
+        onOpenChange={setNovoContatoOpen}
+        nomeInicial={buscaContato.trim() || undefined}
+        onCriado={escolherContato}
+      />
 
       <section className="space-y-3 rounded-xl border p-4">
         <div>

@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useT } from "@/hooks/i18n/useT";
 import { Plus, MagnifyingGlass, UploadSimple, UsersThree } from "@/lib/ui/icons";
@@ -44,12 +45,24 @@ const SOURCE_OPTIONS = [
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100] as const;
 
-export function ContactsListClient() {
+interface ContactsListClientProps {
+  initialTag?: string;
+  title?: string;
+  description?: string;
+  clientsView?: boolean;
+}
+
+export function ContactsListClient({
+  initialTag,
+  title = "Contatos",
+  description = "Customer 360 — busque, filtre e gerencie contatos.",
+  clientsView = false,
+}: ContactsListClientProps = {}) {
   const t = useT();
   const clientesLigado = useActiveOrg()?.cliente_pela_agenda === true;
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [tag, setTag] = useState<string | undefined>(undefined);
+  const [tag, setTag] = useState<string | undefined>(initialTag);
   const [source, setSource] = useState<string | undefined>(undefined);
   const [orderBy, setOrderBy] = useState<ContactOrderBy>("last_activity_at");
   const [orderDir, setOrderDir] = useState<"asc" | "desc">("desc");
@@ -104,10 +117,18 @@ export function ContactsListClient() {
     <div className="space-y-4 p-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("Contatos")}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t(title)}</h1>
           <p className="text-sm text-muted-foreground">
-            {t("Customer 360 — busque, filtre e gerencie contatos.")}
+            {t(description)}
           </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button asChild size="sm" variant={clientsView ? "outline" : "default"}>
+              <Link href="/app/contacts">{t("Todos os contatos")}</Link>
+            </Button>
+            <Button asChild size="sm" variant={clientsView ? "default" : "outline"}>
+              <Link href="/app/clients">{t("Clientes")}</Link>
+            </Button>
+          </div>
         </div>
         {/*
           A estrutura é a da main (o "Importar CSV" do PR #313); o `shrink-0`
@@ -131,7 +152,7 @@ export function ContactsListClient() {
           </Button>
           <Button onClick={() => setCreateOpen(true)}>
             <Plus size={16} weight="bold" aria-hidden />
-            <span>{t("Novo contato")}</span>
+            <span>{clientsView ? t("Novo cliente") : t("Novo contato")}</span>
           </Button>
         </div>
       </header>
@@ -152,25 +173,27 @@ export function ContactsListClient() {
           />
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" disabled={tagOptions.length === 0}>
-              {tag ? <PontoDaEtiqueta tag={tag} className="mr-2" /> : null}
-              {tag ? `${t("Tag")}: ${tag}` : `${t("Tag")}: ${t("todas")}`}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuLabel>{t("Tag")}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setTag(undefined)}>{t("Todas")}</DropdownMenuItem>
-            {tagOptions.map((tagOption) => (
-              <DropdownMenuItem key={tagOption} onClick={() => setTag(tagOption)}>
-                <PontoDaEtiqueta tag={tagOption} className="mr-2" />
-                {tagOption}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {!clientsView ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={tagOptions.length === 0}>
+                {tag ? <PontoDaEtiqueta tag={tag} className="mr-2" /> : null}
+                {tag ? `${t("Tag")}: ${tag}` : `${t("Tag")}: ${t("todas")}`}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuLabel>{t("Tag")}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setTag(undefined)}>{t("Todas")}</DropdownMenuItem>
+              {tagOptions.map((tagOption) => (
+                <DropdownMenuItem key={tagOption} onClick={() => setTag(tagOption)}>
+                  <PontoDaEtiqueta tag={tagOption} className="mr-2" />
+                  {tagOption}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -204,14 +227,14 @@ export function ContactsListClient() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {(search || tag || source) && (
+        {(search || source || (!clientsView && tag)) && (
           <Button
             variant="ghost"
             size="sm"
             onClick={() => {
               setSearchInput("");
               setSearch("");
-              setTag(undefined);
+              setTag(initialTag);
               setSource(undefined);
             }}
           >
@@ -239,9 +262,18 @@ export function ContactsListClient() {
           </Button>
         </Card>
       ) : allContacts.length === 0 ? (
-        <Card className="p-2">
-          <EmptyContacts />
-        </Card>
+        clientsView ? (
+          <Card className="p-6 text-center">
+            <p className="font-medium">{t("Nenhum cliente encontrado.")}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t("Clientes usam a mesma base de Contatos; você pode criar um novo ou marcar um contato existente com a tag cliente.")}
+            </p>
+          </Card>
+        ) : (
+          <Card className="p-2">
+            <EmptyContacts />
+          </Card>
+        )
       ) : (
         <>
           <Card className="overflow-hidden">
@@ -271,7 +303,11 @@ export function ContactsListClient() {
         </>
       )}
 
-      <NewContactDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <NewContactDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        tagsIniciais={clientsView ? [TAG_DE_CLIENTE] : undefined}
+      />
       <ImportContactsDialog open={importOpen} onOpenChange={setImportOpen} />
       <MergeDialog open={duplicadosOpen} onOpenChange={setDuplicadosOpen} />
     </div>
