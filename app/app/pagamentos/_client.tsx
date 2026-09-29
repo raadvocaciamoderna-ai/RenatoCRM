@@ -173,6 +173,13 @@ function dinheiro(valor: number): string {
   }).format(valor / 100);
 }
 
+function percentual(valor: string): number | undefined {
+  const limpo = valor.trim().replace(",", ".");
+  if (!limpo) return undefined;
+  const numero = Number(limpo);
+  return Number.isFinite(numero) && numero > 0 ? numero : undefined;
+}
+
 function rotuloContato(c: ContactSummary): string {
   return c.name?.trim() || c.display_name?.trim() || c.phone_number || "Contato";
 }
@@ -225,6 +232,11 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
   const [parcelas, setParcelas] = useState("2");
   const [cycle, setCycle] = useState<Cycle>("MONTHLY");
   const [maxPayments, setMaxPayments] = useState("");
+  const [juros, setJuros] = useState("");
+  const [multa, setMulta] = useState("");
+  const [desconto, setDesconto] = useState("");
+  const [descontoDias, setDescontoDias] = useState("0");
+  const [parcelamentosAbertos, setParcelamentosAbertos] = useState<string[]>([]);
   const [resultado, setResultado] = useState<ResultadoCriacao | null>(null);
   const [copiado, setCopiado] = useState(false);
   const [filtro, setFiltro] = useState<Categoria>("all");
@@ -309,6 +321,10 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
   const documentoValido = [11, 14].includes(cpfCnpj.replace(/\D/g, "").length);
   const numeroParcelas = Number(parcelas);
   const numeroMaxPayments = maxPayments.trim() ? Number(maxPayments) : undefined;
+  const jurosPercentual = percentual(juros);
+  const multaPercentual = percentual(multa);
+  const descontoPercentual = percentual(desconto);
+  const diasDesconto = Math.max(0, Number.parseInt(descontoDias || "0", 10) || 0);
 
   const podeEnviar =
     podeCobrar &&
@@ -344,6 +360,21 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
         description: descricao.trim() || undefined,
         account_id: contaId,
         account_plan_id: planoId || undefined,
+        ...(jurosPercentual
+          ? { interest: { value: jurosPercentual, type: "PERCENTAGE" as const } }
+          : {}),
+        ...(multaPercentual
+          ? { fine: { value: multaPercentual, type: "PERCENTAGE" as const } }
+          : {}),
+        ...(descontoPercentual
+          ? {
+              discount: {
+                value: descontoPercentual,
+                type: "PERCENTAGE" as const,
+                dueDateLimitDays: diasDesconto,
+              },
+            }
+          : {}),
       };
 
       if (modo === "installment") {
@@ -509,6 +540,28 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
       ),
     [cobrancas.data, filtro, filtroTipo],
   );
+
+  const gruposCobrancas = useMemo(() => {
+    const grupos = new Map<string, Cobranca[]>();
+    for (const cobranca of filtradas) {
+      const chave = cobranca.installment_id ? `installment:${cobranca.installment_id}` : `payment:${cobranca.id}`;
+      const atual = grupos.get(chave) ?? [];
+      atual.push(cobranca);
+      grupos.set(chave, atual);
+    }
+    return Array.from(grupos.entries()).map(([chave, itens]) => ({
+      chave,
+      itens: [...itens].sort(
+        (a, b) => (a.installment_number ?? 0) - (b.installment_number ?? 0),
+      ),
+    }));
+  }, [filtradas]);
+
+  function alternarParcelamento(chave: string) {
+    setParcelamentosAbertos((atuais) =>
+      atuais.includes(chave) ? atuais.filter((item) => item !== chave) : [...atuais, chave],
+    );
+  }
 
   const firstPayment = resultado?.payment ?? null;
 
@@ -893,6 +946,59 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
             </label>
           </div>
 
+          <details className="rounded-lg border border-border bg-surface-elevated/30 p-4">
+            <summary className="cursor-pointer text-sm font-medium">
+              {t("Juros, multa e desconto")}
+            </summary>
+            <p className="mt-2 text-xs text-text-muted">
+              {t("Opcional. Se deixar em branco, o CRM não sobrescreve as regras globais configuradas no Asaas.")}
+            </p>
+            <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+              <label className="space-y-1 text-sm">
+                <span>{t("Juros após vencimento (%)")}</span>
+                <input
+                  className="min-h-11 w-full rounded-md border p-2"
+                  value={juros}
+                  onChange={(e) => setJuros(e.target.value)}
+                  inputMode="decimal"
+                  placeholder={t("Ex.: 1")}
+                />
+              </label>
+              <label className="space-y-1 text-sm">
+                <span>{t("Multa por atraso (%)")}</span>
+                <input
+                  className="min-h-11 w-full rounded-md border p-2"
+                  value={multa}
+                  onChange={(e) => setMulta(e.target.value)}
+                  inputMode="decimal"
+                  placeholder={t("Ex.: 2")}
+                />
+              </label>
+              <label className="space-y-1 text-sm">
+                <span>{t("Desconto (%)")}</span>
+                <input
+                  className="min-h-11 w-full rounded-md border p-2"
+                  value={desconto}
+                  onChange={(e) => setDesconto(e.target.value)}
+                  inputMode="decimal"
+                  placeholder={t("Ex.: 5")}
+                />
+              </label>
+              <label className="space-y-1 text-sm">
+                <span>{t("Desconto até quantos dias antes")}</span>
+                <input
+                  className="min-h-11 w-full rounded-md border p-2"
+                  value={descontoDias}
+                  onChange={(e) => setDescontoDias(e.target.value)}
+                  type="number"
+                  min={0}
+                  max={365}
+                  inputMode="numeric"
+                />
+              </label>
+            </div>
+          </details>
+
           <label className="block space-y-1 text-sm">
             <span>{t("Descrição")}</span>
             <input
@@ -1044,117 +1150,178 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
         ) : null}
 
         <div className="space-y-3">
-          {filtradas.map((cobranca) => {
-            const cliente = cobranca.contact;
-            return (
-              <article
-                key={cobranca.id}
-                className="rounded-lg border border-border bg-surface p-4 shadow-xs transition-colors hover:border-border-strong"
-              >
-                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-lg font-semibold tabular-nums">
-                        {dinheiro(Number(cobranca.amount_cents))}
-                      </p>
-                      <Badge variant={statusVariant(cobranca.status)}>
-                        {STATUS[cobranca.status] ? t(STATUS[cobranca.status]!) : cobranca.status}
-                      </Badge>
-                      <Badge variant="neutral">{t(TIPO[cobranca.billing_type])}</Badge>
-                      {cobranca.installment_number ? (
-                        <Badge variant="neutral">{t("parcela")} {cobranca.installment_number}</Badge>
+          {gruposCobrancas.map(({ chave, itens }) => {
+            const primeira = itens[0]!;
+            const parcelamento = Boolean(primeira.installment_id);
+            const cliente = primeira.contact;
+
+            if (!parcelamento) {
+              const cobranca = primeira;
+              return (
+                <article
+                  key={chave}
+                  className="rounded-lg border border-border bg-surface p-4 shadow-xs transition-colors hover:border-border-strong"
+                >
+                  <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-lg font-semibold tabular-nums">{dinheiro(Number(cobranca.amount_cents))}</p>
+                        <Badge variant={statusVariant(cobranca.status)}>
+                          {STATUS[cobranca.status] ? t(STATUS[cobranca.status]!) : cobranca.status}
+                        </Badge>
+                        <Badge variant="neutral">{t(TIPO[cobranca.billing_type])}</Badge>
+                      </div>
+                      <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium uppercase tracking-wide text-text-muted">{t("Cliente")}</p>
+                          {cliente && cobranca.contact_id ? (
+                            <div className="mt-1">
+                              <Link href={`/app/contacts/${cobranca.contact_id}`} className="font-medium text-text underline-offset-4 hover:text-accent hover:underline">
+                                {rotuloContato(cliente)}
+                              </Link>
+                              <p className="mt-0.5 text-sm text-text-muted">
+                                {[cliente.phone_number, cliente.email].filter(Boolean).join(" · ")}
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="mt-1 text-sm text-text-muted">{t("Cobrança sem contato vinculado")}</p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-wide text-text-muted">{t("Detalhes")}</p>
+                          <p className="mt-1 text-sm">{cobranca.description || t("Sem descrição")}</p>
+                          <p className="mt-0.5 text-sm text-text-muted">{t("Vencimento")}: {dataBr(cobranca.due_date)}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap gap-2 xl:max-w-sm xl:justify-end">
+                      {cobranca.contact_id ? (
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/app/contacts/${cobranca.contact_id}`}><Users size={15} aria-hidden />{t("Cliente")}</Link>
+                        </Button>
+                      ) : null}
+                      {cobranca.invoice_url ? (
+                        <Button asChild variant="outline" size="sm">
+                          <a href={cobranca.invoice_url} target="_blank" rel="noreferrer"><ArrowSquareOut size={15} aria-hidden />{t("Segunda via")}</a>
+                        </Button>
+                      ) : null}
+                      {cobranca.billing_type === "PIX" && cobranca.asaas_payment_id ? (
+                        <Button variant="outline" size="sm" disabled={copiarPixExistente.isPending} onClick={() => copiarPixExistente.mutate(cobranca.id)}>
+                          {t("Copiar Pix")}
+                        </Button>
+                      ) : null}
+                      {cobranca.contact_id && cobranca.asaas_payment_id && podeCobrar ? (
+                        <Button size="sm" disabled={enviarWhatsApp.isPending} onClick={() => enviarWhatsApp.mutate(cobranca.id)}>
+                          <WhatsappLogo size={15} aria-hidden />{t("Enviar WhatsApp")}
+                        </Button>
                       ) : null}
                     </div>
+                  </div>
+                </article>
+              );
+            }
 
-                    <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
-                          {t("Cliente")}
-                        </p>
-                        {cliente && cobranca.contact_id ? (
+            const total = itens.reduce((soma, item) => soma + Number(item.amount_cents), 0);
+            const pagas = itens.filter((item) => categoria(item.status) === "received").length;
+            const vencidas = itens.filter((item) => categoria(item.status) === "overdue").length;
+            const pendentes = itens.filter((item) => categoria(item.status) === "pending").length;
+            const proxima =
+              itens.find((item) => categoria(item.status) === "pending" || categoria(item.status) === "overdue") ??
+              itens[itens.length - 1]!;
+            const aberto = parcelamentosAbertos.includes(chave);
+
+            return (
+              <article key={chave} className="rounded-lg border border-border bg-surface p-4 shadow-xs">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-lg font-semibold">
+                        {primeira.description || t("Parcelamento")}
+                      </p>
+                      <Badge variant="neutral">{t(TIPO[primeira.billing_type])}</Badge>
+                      <Badge variant={vencidas > 0 ? "error" : pagas === itens.length ? "success" : "warning"}>
+                        {pagas === itens.length ? t("Pago") : vencidas > 0 ? t("Com vencidas") : t("Em andamento")}
+                      </Badge>
+                    </div>
+                    <p className="mt-2 text-base font-medium tabular-nums">
+                      {dinheiro(total)} · {itens.length}x de {dinheiro(Number(primeira.amount_cents))}
+                    </p>
+                    <div className="mt-3 grid gap-3 md:grid-cols-2">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-text-muted">{t("Cliente")}</p>
+                        {cliente && primeira.contact_id ? (
                           <div className="mt-1">
-                            <Link
-                              href={`/app/contacts/${cobranca.contact_id}`}
-                              className="font-medium text-text underline-offset-4 hover:text-accent hover:underline"
-                            >
+                            <Link href={`/app/contacts/${primeira.contact_id}`} className="font-medium text-text underline-offset-4 hover:text-accent hover:underline">
                               {rotuloContato(cliente)}
                             </Link>
-                            <p className="mt-0.5 text-sm text-text-muted">
-                              {[cliente.phone_number, cliente.email].filter(Boolean).join(" · ")}
-                            </p>
+                            <p className="mt-0.5 text-sm text-text-muted">{[cliente.phone_number, cliente.email].filter(Boolean).join(" · ")}</p>
                           </div>
                         ) : (
                           <p className="mt-1 text-sm text-text-muted">{t("Cobrança sem contato vinculado")}</p>
                         )}
                       </div>
                       <div>
-                        <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
-                          {t("Detalhes")}
-                        </p>
-                        <p className="mt-1 text-sm">
-                          {cobranca.description || t("Sem descrição")}
-                        </p>
-                        <p className="mt-0.5 text-sm text-text-muted">
-                          {t("Vencimento")}: {dataBr(cobranca.due_date)}
-                        </p>
+                        <p className="text-xs font-medium uppercase tracking-wide text-text-muted">{t("Resumo")}</p>
+                        <p className="mt-1 text-sm">{pagas} {t("pagas")} · {pendentes} {t("pendentes")} · {vencidas} {t("vencidas")}</p>
+                        <p className="mt-0.5 text-sm text-text-muted">{t("Próximo vencimento")}: {dataBr(proxima.due_date)}</p>
                       </div>
                     </div>
-
-                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-text-muted">
-                      {cobranca.installment_id ? <span>{t("Parcelamento")}</span> : null}
-                      {cobranca.subscription_id ? <span>{t("Recorrente")}</span> : null}
-                      {cobranca.needs_reconciliation ? (
-                        <span className="font-medium text-warning-fg">{t("Precisa de conferência manual")}</span>
-                      ) : null}
-                    </div>
                   </div>
-
-                  <div className="flex shrink-0 flex-wrap gap-2 xl:max-w-sm xl:justify-end">
-                    {cobranca.contact_id ? (
+                  <div className="flex shrink-0 flex-wrap gap-2 xl:max-w-md xl:justify-end">
+                    <Button variant="outline" size="sm" onClick={() => alternarParcelamento(chave)}>
+                      {aberto ? t("Ocultar parcelas") : t("Ver parcelas")}
+                    </Button>
+                    {primeira.contact_id ? (
                       <Button asChild variant="outline" size="sm">
-                        <Link href={`/app/contacts/${cobranca.contact_id}`}>
-                          <Users size={15} aria-hidden />
-                          {t("Cliente")}
-                        </Link>
+                        <Link href={`/app/contacts/${primeira.contact_id}`}><Users size={15} aria-hidden />{t("Cliente")}</Link>
                       </Button>
                     ) : null}
-                    {cobranca.invoice_url ? (
-                      <Button asChild variant="outline" size="sm">
-                        <a href={cobranca.invoice_url} target="_blank" rel="noreferrer">
-                          <ArrowSquareOut size={15} aria-hidden />
-                          {t("Segunda via")}
-                        </a>
-                      </Button>
-                    ) : null}
-                    {cobranca.billing_type === "PIX" && cobranca.asaas_payment_id ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={copiarPixExistente.isPending}
-                        onClick={() => copiarPixExistente.mutate(cobranca.id)}
-                      >
-                        {t("Copiar Pix")}
-                      </Button>
-                    ) : null}
-                    {cobranca.contact_id && cobranca.asaas_payment_id && podeCobrar ? (
-                      <Button
-                        size="sm"
-                        disabled={enviarWhatsApp.isPending}
-                        onClick={() => enviarWhatsApp.mutate(cobranca.id)}
-                      >
-                        <WhatsappLogo size={15} aria-hidden />
-                        {t("Enviar WhatsApp")}
+                    {proxima.contact_id && proxima.asaas_payment_id && podeCobrar ? (
+                      <Button size="sm" disabled={enviarWhatsApp.isPending} onClick={() => enviarWhatsApp.mutate(proxima.id)}>
+                        <WhatsappLogo size={15} aria-hidden />{t("Enviar próxima")}
                       </Button>
                     ) : null}
                   </div>
                 </div>
+
+                {aberto ? (
+                  <div className="mt-4 space-y-2 border-t border-border pt-4">
+                    {itens.map((parcela) => (
+                      <div key={parcela.id} className="flex flex-col gap-2 rounded-md bg-surface-elevated/50 p-3 md:flex-row md:items-center md:justify-between">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-medium">{t("Parcela")} {parcela.installment_number ?? "—"}/{itens.length}</span>
+                          <span className="text-sm tabular-nums">{dinheiro(Number(parcela.amount_cents))}</span>
+                          <Badge variant={statusVariant(parcela.status)}>{STATUS[parcela.status] ? t(STATUS[parcela.status]!) : parcela.status}</Badge>
+                          <span className="text-xs text-text-muted">{dataBr(parcela.due_date)}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {parcela.invoice_url ? (
+                            <Button asChild variant="outline" size="sm">
+                              <a href={parcela.invoice_url} target="_blank" rel="noreferrer">{t("Segunda via")}</a>
+                            </Button>
+                          ) : null}
+                          {parcela.billing_type === "PIX" && parcela.asaas_payment_id ? (
+                            <Button variant="outline" size="sm" disabled={copiarPixExistente.isPending} onClick={() => copiarPixExistente.mutate(parcela.id)}>
+                              {t("Copiar Pix")}
+                            </Button>
+                          ) : null}
+                          {parcela.contact_id && parcela.asaas_payment_id && podeCobrar ? (
+                            <Button size="sm" disabled={enviarWhatsApp.isPending} onClick={() => enviarWhatsApp.mutate(parcela.id)}>
+                              <WhatsappLogo size={15} aria-hidden />{t("WhatsApp")}
+                            </Button>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
               </article>
             );
           })}
         </div>
       </section>
 
-      <NewContactDialog
+      <NewContactDialog      <NewContactDialog
         open={novoContatoOpen}
         onOpenChange={setNovoContatoOpen}
         nomeInicial={buscaContato.trim() || undefined}
