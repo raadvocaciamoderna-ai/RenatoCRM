@@ -223,6 +223,10 @@ export async function getAsaasCustomer(id: string): Promise<AsaasCustomer> {
   return asaasRequest<AsaasCustomer>(`/customers/${encodeURIComponent(id)}`);
 }
 
+export async function getAsaasPayment(id: string): Promise<AsaasPayment> {
+  return asaasRequest<AsaasPayment>(`/payments/${encodeURIComponent(id)}`);
+}
+
 export async function findAsaasCustomerByCpfCnpj(cpfCnpj: string): Promise<AsaasCustomer | null> {
   const params = new URLSearchParams({ cpfCnpj, limit: "1", offset: "0" });
   const result = await asaasRequest<AsaasList<AsaasCustomer>>(`/customers?${params.toString()}`);
