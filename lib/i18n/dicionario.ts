@@ -57,6 +57,9 @@ export const DICIONARIO: Traducoes = {
   "Cobrança criada": { es: "Cobro creado" },
   "Cobrança enviada pelo WhatsApp.": { es: "Cobro enviado por WhatsApp." },
   "Cobrança sem contato vinculado": { es: "Cobro sin contacto vinculado" },
+  "Cliente da cobrança": { es: "Cliente del cobro" },
+  "Criar novo contato": { es: "Crear nuevo contacto" },
+  "Digitar manualmente": { es: "Ingresar manualmente" },
   "Configurações financeiras": { es: "Configuración financiera" },
   "Crie cobranças para clientes do CRM, envie pelo WhatsApp e acompanhe recebimentos, atrasos e recorrências.": {
     es: "Crea cobros para clientes del CRM, envíalos por WhatsApp y acompaña pagos, atrasos y recurrencias.",
@@ -6476,6 +6479,18 @@ export const DICIONARIO: Traducoes = {
   "CPF (opcional)": { es: "CPF (opcional)" },
   "Criar contato": { es: "Crear contacto" },
   "Trocar contato": { es: "Cambiar contacto" },
+  "Todos os contatos": { es: "Todos los contactos" },
+  "Selecionar no CRM": { es: "Seleccionar en el CRM" },
+  "Use um contato já existente no CRM ou informe os dados manualmente.": {
+    es: "Usa un contacto existente en el CRM o ingresa los datos manualmente.",
+  },
+  "Os dados abaixo serão usados somente nesta cobrança, sem criar um contato automaticamente.": {
+    es: "Los datos siguientes se usarán solo en este cobro, sin crear un contacto automáticamente.",
+  },
+  "Ver clientes": { es: "Ver clientes" },
+  "Visão dos clientes dentro da mesma base de Contatos, sem duplicar cadastros.": {
+    es: "Vista de clientes dentro de la misma base de Contactos, sin duplicar registros.",
+  },
   "Uma cobrança com vencimento definido.": { es: "Un cobro con fecha de vencimiento definida." },
   "Sem contato, este lead não recebe WhatsApp nem entra nas automações.": {
     es: "Sin contacto, este lead no recibe WhatsApp ni entra en las automatizaciones.",
