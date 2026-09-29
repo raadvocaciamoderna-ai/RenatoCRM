@@ -206,9 +206,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
   const params = useSearchParams();
 
   const contactIdInicial = params.get("contact_id") ?? "";
-  const [origemCliente, setOrigemCliente] = useState<"crm" | "manual">(
-    contactIdInicial ? "crm" : "crm",
-  );
+  const [origemCliente, setOrigemCliente] = useState<"crm" | "manual">("crm");
   const [contactId, setContactId] = useState(contactIdInicial);
   const [buscaContato, setBuscaContato] = useState("");
   const [novoContatoOpen, setNovoContatoOpen] = useState(false);
@@ -694,7 +692,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
                     <Button type="button" variant="outline" size="sm" onClick={() => setNovoContatoOpen(true)}>
                       {t("Criar novo contato")}
                     </Button>
-                    <Button asChild type="button" variant="ghost" size="sm">
+                    <Button asChild variant="ghost" size="sm">
                       <Link href="/app/clients">{t("Ver clientes")}</Link>
                     </Button>
                   </div>
