@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useT } from "@/hooks/i18n/useT";
 import { Plus, MagnifyingGlass, UploadSimple, UsersThree } from "@/lib/ui/icons";
@@ -44,12 +45,24 @@ const SOURCE_OPTIONS = [
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100] as const;
 
-export function ContactsListClient() {
+interface ContactsListClientProps {
+  initialTag?: string;
+  title?: string;
+  description?: string;
+  clientsView?: boolean;
+}
+
+export function ContactsListClient({
+  initialTag,
+  title = "Contatos",
+  description = "Customer 360 — busque, filtre e gerencie contatos.",
+  clientsView = false,
+}: ContactsListClientProps = {}) {
   const t = useT();
   const clientesLigado = useActiveOrg()?.cliente_pela_agenda === true;
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [tag, setTag] = useState<string | undefined>(undefined);
+  const [tag, setTag] = useState<string | undefined>(initialTag);
   const [source, setSource] = useState<string | undefined>(undefined);
   const [orderBy, setOrderBy] = useState<ContactOrderBy>("last_activity_at");
   const [orderDir, setOrderDir] = useState<"asc" | "desc">("desc");
@@ -104,10 +117,18 @@ export function ContactsListClient() {
     <div className="space-y-4 p-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("Contatos")}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t(title)}</h1>
           <p className="text-sm text-muted-foreground">
-            {t("Customer 360 — busque, filtre e gerencie contatos.")}
+            {t(description)}
           </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button asChild size="sm" variant={clientsView ? "outline" : "default"}>
+              <Link href="/app/contacts">{t("Todos os contatos")}</Link>
+            </Button>
+            <Button asChild size="sm" variant={clientsView ? "default" : "outline"}>
+              <Link href="/app/clients">{t("Clientes")}</Link>
+            </Button>
+          </div>
         </div>
         {/*
           A estrutura é a da main (o "Importar CSV" do PR #313); o `shrink-0`
@@ -211,7 +232,7 @@ export function ContactsListClient() {
             onClick={() => {
               setSearchInput("");
               setSearch("");
-              setTag(undefined);
+              setTag(initialTag);
               setSource(undefined);
             }}
           >
