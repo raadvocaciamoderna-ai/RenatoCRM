@@ -467,6 +467,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
     onSuccess: (data) => {
       setMensagemAcao(t("Cobrança enviada pelo WhatsApp."));
       setConversaEnviadaId(data.conversation_id);
+      void qc.invalidateQueries({ queryKey: ["financeiro", "asaas", "cobrancas"] });
     },
     onError: showApiError,
   });
@@ -1210,7 +1211,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
                           {t("Copiar Pix")}
                         </Button>
                       ) : null}
-                      {cobranca.contact_id && cobranca.asaas_payment_id && podeCobrar ? (
+                      {cobranca.asaas_payment_id && podeCobrar ? (
                         <Button size="sm" disabled={enviarWhatsApp.isPending} onClick={() => enviarWhatsApp.mutate(cobranca.id)}>
                           <WhatsappLogo size={15} aria-hidden />{t("Enviar WhatsApp")}
                         </Button>
@@ -1276,7 +1277,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
                         <Link href={`/app/contacts/${primeira.contact_id}`}><Users size={15} aria-hidden />{t("Cliente")}</Link>
                       </Button>
                     ) : null}
-                    {proxima.contact_id && proxima.asaas_payment_id && podeCobrar ? (
+                    {proxima.asaas_payment_id && podeCobrar ? (
                       <Button size="sm" disabled={enviarWhatsApp.isPending} onClick={() => enviarWhatsApp.mutate(proxima.id)}>
                         <WhatsappLogo size={15} aria-hidden />{t("Enviar próxima")}
                       </Button>
@@ -1305,7 +1306,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
                               {t("Copiar Pix")}
                             </Button>
                           ) : null}
-                          {parcela.contact_id && parcela.asaas_payment_id && podeCobrar ? (
+                          {parcela.asaas_payment_id && podeCobrar ? (
                             <Button size="sm" disabled={enviarWhatsApp.isPending} onClick={() => enviarWhatsApp.mutate(parcela.id)}>
                               <WhatsappLogo size={15} aria-hidden />{t("WhatsApp")}
                             </Button>
