@@ -11164,6 +11164,11 @@ export const DICIONARIO: Traducoes = {
   "já está em outra empresa": { es: "ya está en otra empresa" },
   Vincular: { es: "Vincular" },
   "Nenhum contato encontrado.": { es: "Ningún contacto encontrado." },
+  "Nenhum cliente encontrado.": { es: "Ningún cliente encontrado." },
+  "Novo cliente": { es: "Nuevo cliente" },
+  "Clientes usam a mesma base de Contatos; você pode criar um novo ou marcar um contato existente com a tag cliente.": {
+    es: "Los clientes usan la misma base de Contactos; puedes crear uno nuevo o marcar un contacto existente con la etiqueta cliente.",
+  },
   "Erro ao carregar empresa.": { es: "Error al cargar empresa." },
   Observações: { es: "Observaciones" },
   "Já existe uma empresa com este CNPJ nesta organização.": {
