@@ -10,6 +10,21 @@ const telefone = z
   .transform((value) => value.replace(/\D/g, ""))
   .refine((value) => value.length >= 10 && value.length <= 13, "Telefone inválido.");
 
+const percentualAsaas = z.object({
+  value: z.number().positive().max(100),
+  type: z.literal("PERCENTAGE"),
+});
+
+const descontoAsaas = percentualAsaas.extend({
+  dueDateLimitDays: z.number().int().min(0).max(365),
+});
+
+const regrasCobrancaAsaas = {
+  interest: percentualAsaas.optional(),
+  fine: percentualAsaas.optional(),
+  discount: descontoAsaas.optional(),
+};
+
 export const criarClienteAsaasSchema = z.object({
   name: z.string().trim().min(2).max(150),
   cpfCnpj,
@@ -27,6 +42,7 @@ export const criarCobrancaAsaasSchema = z.object({
   description: z.string().trim().min(1).max(500).optional(),
   account_id: z.string().uuid(),
   account_plan_id: z.string().uuid().nullish(),
+  ...regrasCobrancaAsaas,
 });
 
 export const criarParcelamentoAsaasSchema = z.object({
@@ -39,6 +55,7 @@ export const criarParcelamentoAsaasSchema = z.object({
   description: z.string().trim().min(1).max(500).optional(),
   account_id: z.string().uuid(),
   account_plan_id: z.string().uuid().nullish(),
+  ...regrasCobrancaAsaas,
 });
 
 export const criarAssinaturaAsaasSchema = z.object({
@@ -52,6 +69,7 @@ export const criarAssinaturaAsaasSchema = z.object({
   max_payments: z.number().int().min(1).max(240).optional(),
   account_id: z.string().uuid(),
   account_plan_id: z.string().uuid().nullish(),
+  ...regrasCobrancaAsaas,
 });
 
 export const configurarWebhookAsaasSchema = z.object({
