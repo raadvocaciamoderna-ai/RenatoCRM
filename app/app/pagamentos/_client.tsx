@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { NewContactDialog } from "@/components/contacts/NewContactDialog";
 import { showApiError } from "@/components/feedback/ApiErrorToast";
@@ -413,10 +414,13 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
       setCopiado(false);
       setMensagemAcao(null);
       setConversaEnviadaId(null);
+      toast.success(t("Cobrança gerada com sucesso."));
       void qc.invalidateQueries({ queryKey: ["financeiro", "asaas", "cobrancas"] });
       void qc.invalidateQueries({ queryKey: ["financeiro", "asaas", "assinaturas"] });
     },
-    onError: showApiError,
+    onError: (error) => {
+      showApiError(error);
+    },
   });
 
   const enviarWhatsApp = useMutation({
