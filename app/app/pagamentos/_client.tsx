@@ -1136,7 +1136,7 @@ export function Pagamentos({ podeCobrar }: { podeCobrar: boolean }) {
                         {t("Copiar Pix")}
                       </Button>
                     ) : null}
-                    {cobranca.contact_id && cobranca.invoice_url && podeCobrar ? (
+                    {cobranca.contact_id && cobranca.asaas_payment_id && podeCobrar ? (
                       <Button
                         size="sm"
                         disabled={enviarWhatsApp.isPending}
