@@ -84,6 +84,15 @@ export type AsaasWebhook = {
   [key: string]: unknown;
 };
 
+export type AsaasPercentageRule = {
+  value: number;
+  type: "PERCENTAGE";
+};
+
+export type AsaasDiscountRule = AsaasPercentageRule & {
+  dueDateLimitDays: number;
+};
+
 type AsaasList<T> = {
   object?: "list";
   hasMore?: boolean;
@@ -253,6 +262,9 @@ export async function createAsaasPayment(input: {
   dueDate: string;
   description?: string;
   externalReference: string;
+  interest?: AsaasPercentageRule;
+  fine?: AsaasPercentageRule;
+  discount?: AsaasDiscountRule;
 }): Promise<AsaasPayment> {
   return asaasRequest<AsaasPayment>("/payments", {
     method: "POST",
@@ -268,6 +280,9 @@ export async function createAsaasInstallment(input: {
   dueDate: string;
   description?: string;
   externalReference: string;
+  interest?: AsaasPercentageRule;
+  fine?: AsaasPercentageRule;
+  discount?: AsaasDiscountRule;
 }): Promise<AsaasPayment> {
   // O fluxo recomendado pelo Asaas para informar o valor TOTAL do parcelamento
   // é POST /payments com installmentCount + totalValue. A resposta é a primeira
@@ -296,6 +311,9 @@ export async function createAsaasSubscription(input: {
   description?: string;
   maxPayments?: number;
   externalReference: string;
+  interest?: AsaasPercentageRule;
+  fine?: AsaasPercentageRule;
+  discount?: AsaasDiscountRule;
 }): Promise<AsaasSubscription> {
   return asaasRequest<AsaasSubscription>("/subscriptions", {
     method: "POST",
