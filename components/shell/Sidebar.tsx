@@ -150,7 +150,7 @@ export function SidebarContent({
           // fica com uma moldura branca de sobra. Troca aceita: pior caso
           // "moldura desnecessária" é sempre melhor que pior caso "logo
           // invisível".
-          <div className="rounded-md dark:bg-white dark:px-2 dark:py-1 dark:shadow-sm">
+          <div className="rounded-md dark:bg-[#354b2d] dark:px-2 dark:py-1 dark:ring-1 dark:ring-[#587150]/40">
             {/* <img> em vez de next/image de propósito: a URL vem de quem hospeda
               (banco ou .env), e next/image exige allowlist de domínios fechada em
               build — a imagem pré-buildada rejeitaria o domínio do self-hoster.
@@ -165,9 +165,7 @@ export function SidebarContent({
           collapsed ? (
             <SimboloDoProduto nome={nome} className="h-8 w-8" />
           ) : (
-            <div className="rounded-md dark:bg-[#354b2d] dark:px-2 dark:py-1 dark:shadow-sm dark:ring-1 dark:ring-[#587150]/40">
-              <LogotipoDoProduto nome={nome} className="h-8 w-auto" />
-            </div>
+            <LogotipoDoProduto nome={nome} className="h-8 w-auto" />
           )
         ) : (
           <span className={cn("font-semibold tracking-tight", collapsed && "sr-only")}>{nome}</span>
