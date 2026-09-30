@@ -112,9 +112,19 @@ export function SidebarContent({
    * descer para ele — que é o contrário do que a precedência por campo promete.
    */
   const logo = activeOrg?.marca?.logoUrl || brand.logoUrl;
-  // Só quando NINGUÉM — nem a instalação, nem a organização — pôs marca própria:
-  // é a condição de `lib/branding.ts`, avaliada sobre o que a barra vai mostrar.
-  const marcaDoProduto = marcaEhADoProduto({ name: nome, logoUrl: logo ?? null });
+  // A própria arte oficial do RenaCrm pode estar salva no banco como `logo_url`.
+  // Nesse caso ela não é uma marca "de revendedor": continua sendo a marca do
+  // produto e deve usar o SVG inline, que troca as cores junto com o tema.
+  // Isso também evita a moldura branca genérica de logos externos no modo escuro.
+  const logoEhDoProduto =
+    typeof logo === "string" &&
+    /\/docs\/brand\/renacrm-logo(?:-dark)?\.svg(?:[?#].*)?$/i.test(logo);
+  // Só quando a marca efetiva é a do produto. Para a URL oficial acima, tratamos
+  // o logo como nulo de propósito para cair no desenho inline responsivo ao tema.
+  const marcaDoProduto = marcaEhADoProduto({
+    name: nome,
+    logoUrl: logoEhDoProduto ? null : (logo ?? null),
+  });
 
   return (
     <>
@@ -124,7 +134,7 @@ export function SidebarContent({
           collapsed ? "justify-center" : "justify-start",
         )}
       >
-        {logo && !collapsed ? (
+        {logo && !collapsed && !marcaDoProduto ? (
           // A moldura clara vale SÓ para o logo enviado por quem hospeda. A arte
           // do produto (ramo `marcaDoProduto`, logo abaixo) já é desenhada para os
           // dois temas e não precisa dela — pôr a moldura ali seria dar o remédio
@@ -155,7 +165,9 @@ export function SidebarContent({
           collapsed ? (
             <SimboloDoProduto nome={nome} className="h-8 w-8" />
           ) : (
-            <LogotipoDoProduto nome={nome} className="h-8 w-auto" />
+            <div className="rounded-md dark:bg-[#354b2d] dark:px-2 dark:py-1 dark:shadow-sm dark:ring-1 dark:ring-[#587150]/40">
+              <LogotipoDoProduto nome={nome} className="h-8 w-auto" />
+            </div>
           )
         ) : (
           <span className={cn("font-semibold tracking-tight", collapsed && "sr-only")}>{nome}</span>
