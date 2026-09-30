@@ -8,11 +8,22 @@ import { DEFAULT_APP_NAME, resolveBranding } from "@/lib/branding";
 const RAIZ = process.cwd();
 
 describe("resolveBranding", () => {
+  it("atualiza o padrão antigo salvo sem sobrescrever uma logo própria", () => {
+    expect(resolveBranding("DeskcommCRM", "")).toEqual({
+      name: "RenaCrm",
+      logoUrl: null,
+      initial: "R",
+    });
+    expect(resolveBranding("DeskcommCRM", "https://cdn.example.com/custom.png").name).toBe(
+      "DeskcommCRM",
+    );
+  });
+
   it("cai no padrão quando não há marca configurada", () => {
     expect(resolveBranding(undefined, undefined)).toEqual({
       name: DEFAULT_APP_NAME,
       logoUrl: null,
-      initial: "D",
+      initial: "R",
     });
   });
 
@@ -131,7 +142,7 @@ describe("nome do arquivo de códigos de recuperação", () => {
   it("deriva o prefixo da marca, sem acento e sem espaço", () => {
     expect(prefixoDoArquivo("Vendas Turbo")).toBe("vendas-turbo");
     expect(prefixoDoArquivo("Ótima Gestão")).toBe("otima-gestao");
-    expect(prefixoDoArquivo(DEFAULT_APP_NAME)).toBe("deskcommcrm");
+    expect(prefixoDoArquivo(DEFAULT_APP_NAME)).toBe("renacrm");
   });
 
   it("não devolve hífen pendurado nem repetido", () => {

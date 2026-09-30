@@ -41,7 +41,7 @@ const org = {
 let contexto: { user: AuthUser; activeOrg: ActiveOrg | null } = { user: usuario, activeOrg: org };
 vi.mock("@/hooks/auth/AuthProvider", () => ({ useAuth: () => contexto }));
 
-const PADRAO: Branding = { name: DEFAULT_APP_NAME, logoUrl: null, initial: "D" };
+const PADRAO: Branding = { name: DEFAULT_APP_NAME, logoUrl: null, initial: "R" };
 
 function renderSidebar(marca: Branding, collapsed: boolean) {
   return render(
@@ -87,7 +87,7 @@ describe("o desenho na barra lateral", () => {
   it("recolhida, mostra só o símbolo — e não a inicial em texto", () => {
     renderSidebar(PADRAO, true);
     expect(screen.getByRole("img", { name: DEFAULT_APP_NAME }).tagName.toLowerCase()).toBe("svg");
-    expect(screen.queryByText("D")).toBeNull();
+    expect(screen.queryByText("R")).toBeNull();
   });
 
   it("com nome da instalação, segue em texto — o desenho do produto não vaza", () => {

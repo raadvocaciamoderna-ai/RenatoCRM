@@ -16,7 +16,9 @@
  * runtime em vez de lida do bundle.
  */
 
-export const DEFAULT_APP_NAME = "DeskcommCRM";
+// Identidade deste fork, autorizada pelo proprietário do RenatoCRM.
+export const DEFAULT_APP_NAME = "RenaCrm";
+const NOME_PADRAO_ANTERIOR = "DeskcommCRM";
 
 export type Branding = {
   /** Nome exibido na interface e nos títulos de página. */
@@ -39,8 +41,14 @@ export function resolveBranding(
   name: string | undefined | null,
   logoUrl: string | undefined | null,
 ): Branding {
-  const resolvedName = (name ?? "").trim() || DEFAULT_APP_NAME;
+  const configuredName = (name ?? "").trim();
   const resolvedLogo = (logoUrl ?? "").trim();
+  // Atualiza apenas o padrão antigo sem logo próprio, inclusive se foi salvo
+  // pelo instalador. Marcas configuradas continuam tendo precedência.
+  const resolvedName =
+    !configuredName || (configuredName === NOME_PADRAO_ANTERIOR && !resolvedLogo)
+      ? DEFAULT_APP_NAME
+      : configuredName;
   return {
     name: resolvedName,
     logoUrl: resolvedLogo.length > 0 ? resolvedLogo : null,
