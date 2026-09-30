@@ -498,18 +498,45 @@ export class WahaClient {
     text: string,
     replyTo?: string | null,
   ): Promise<unknown> {
-    const res = await this.fetchComTeto(`${this.baseUrl}/api/sendText`, {
-      method: "POST",
-      headers: {
-        "X-Api-Key": this.apiKey,
-        "Content-Type": "application/json",
-      },
-      // Só entra quando existe: mandar `reply_to: null` é pedir para citar
-      // "nada", e a API não tem por que ser gentil com isso.
-      body: JSON.stringify({ session, chatId, text, ...(replyTo ? { reply_to: replyTo } : {}) }),
-    });
-    if (!res.ok) throw new Error(`waha_${res.status}`);
-    return res.json();
+    const enviar = () =>
+      this.fetchComTeto(`${this.baseUrl}/api/sendText`, {
+        method: "POST",
+        headers: {
+          "X-Api-Key": this.apiKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ session, chatId, text, ...(replyTo ? { reply_to: replyTo } : {}) }),
+      });
+
+    let res = await enviar();
+    if (res.ok) return res.json();
+
+    if (res.status === 422) {
+      try {
+        const atual = await this.getSessionQr(session);
+        if (atual.status !== "WORKING" && atual.status !== "SCAN_QR_CODE") {
+          if (atual.status === "STOPPED" || atual.status === "FAILED") {
+            await this.startExistingSession(session);
+          }
+          for (let i = 0; i < 5; i++) {
+            const estado = await this.getSessionQr(session);
+            if (estado.status === "WORKING") {
+              res = await enviar();
+              if (res.ok) return res.json();
+              break;
+            }
+            if (estado.status === "SCAN_QR_CODE") break;
+            await new Promise((resolve) => setTimeout(resolve, 400));
+          }
+        }
+      } catch (err) {
+        logger.warn("[waha] recuperação após 422 falhou", {
+          error: err instanceof Error ? err.message : "unknown",
+        });
+      }
+    }
+
+    throw new Error(`waha_${res.status}`);
   }
 
   /**
