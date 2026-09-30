@@ -39,7 +39,6 @@ import { traduzir } from "@/lib/i18n/dicionario";
 
 import { FormularioDaMarcaDaOrganizacao } from "./_form";
 
-export const metadata = { title: "Marca" };
 export const dynamic = "force-dynamic";
 
 export default async function MarcaDaOrganizacaoPage() {
