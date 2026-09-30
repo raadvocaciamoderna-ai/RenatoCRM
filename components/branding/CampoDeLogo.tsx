@@ -17,10 +17,9 @@
  * entrelaçado e para JPEG, e terminaria escrevendo em português o que estas duas
  * caixas mostram com precisão total e zero linha de parser.
  *
- * As duas cores vêm da RÉGUA DO PRODUTO (`--color-surface` de cada tema), nunca
- * digitadas: são as mesmas superfícies onde o logo de fato aparece — a barra
- * lateral e o cartão do login. Um par de hexes escritos aqui viraria a quinta
- * cópia de uma cor que o produto já declara em um lugar só.
+ * Para a identidade RenaCrm, as pranchetas usam creme no claro e verde-floresta
+ * no escuro. A intenção é avaliar a logo no contexto visual aprovado, sem o
+ * retângulo branco que destoava no modo escuro.
  *
  * ── Por que o upload é IMEDIATO, e não parte do "Salvar" do formulário ───────
  *
@@ -41,17 +40,7 @@ import { Label } from "@/components/ui/label";
 import { DEFAULT_APP_NAME } from "@/lib/branding";
 import { melhorFrenteSobre } from "@/lib/branding/contraste";
 import { TAMANHO_MAXIMO_DO_LOGO } from "@/lib/branding/logo";
-import { REGUA_DO_PRODUTO } from "@/lib/branding/regua-do-produto";
 import { useT } from "@/hooks/i18n/useT";
-
-/** A superfície onde o logo de fato aparece, em cada tema. Lida, nunca digitada. */
-function superficie(tema: "claro" | "escuro"): string {
-  const encontrada = REGUA_DO_PRODUTO[tema].base.find((b) => b.chave === "--color-surface");
-  // O `??` não é zelo abstrato: `base` é `readonly {...}[]`, então o compilador
-  // não garante que a chave exista. Cair no fundo do tema é o degrade certo —
-  // a prévia continua contrastando, só não é exatamente a superfície do produto.
-  return encontrada?.hex ?? REGUA_DO_PRODUTO[tema].base[0]?.hex ?? "#ffffff";
-}
 
 // Pranchetas da identidade RenaCrm: creme no claro e verde-floresta no escuro.
 const SUPERFICIE_CLARA = "#f5f4ef";
