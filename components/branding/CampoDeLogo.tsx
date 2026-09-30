@@ -43,7 +43,7 @@ import { useT } from "@/hooks/i18n/useT";
 
 // Pranchetas da identidade RenaCrm, alinhadas à paleta oficial.
 const SUPERFICIE_CLARA = "#ebebeb";
-const SUPERFICIE_ESCURA = "#211d1a";
+const SUPERFICIE_ESCURA = "#0b141a";
 
 export type EscopoDoLogo = "instalacao" | "organizacao";
 
@@ -308,7 +308,7 @@ export function CampoDeLogo({
                 className="flex h-24 items-center justify-center rounded-lg border px-4 shadow-sm"
                 style={{
                   backgroundColor: fundo,
-                  borderColor: tema === "claro" ? "#c9c9c9" : "#2c3151",
+                  borderColor: tema === "claro" ? "#c9c9c9" : "#2a3942",
                 }}
               >
                 {usarMarcaDoProduto ? (
