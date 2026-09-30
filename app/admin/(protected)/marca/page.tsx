@@ -11,7 +11,6 @@ import { traduzir } from "@/lib/i18n/dicionario";
 
 import { FormularioDaMarca } from "./_form";
 
-export const metadata = { title: "Marca da instalação" };
 export const dynamic = "force-dynamic";
 
 /**
