@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 const buttonVariants = cva(
   [
     "inline-flex items-center justify-center gap-2 whitespace-nowrap",
-    "rounded-sm font-medium",
+    "rounded-md font-semibold",
     "transition-[background-color,border-color,color,box-shadow,transform]",
     "duration-fast ease-out",
     "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
@@ -27,17 +27,17 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "border border-transparent bg-[#007a66] text-white shadow-sm hover:bg-[#006453] hover:shadow-md dark:bg-[#00a884] dark:text-[#071b17] dark:hover:bg-[#14b894]",
+          "border border-[#006453] bg-[#007a66] text-white shadow-md hover:bg-[#006453] hover:shadow-lg dark:border-[#13b18f] dark:bg-[#00a884] dark:text-[#071b17] dark:hover:bg-[#19b997]",
         default:
-          "border border-transparent bg-[#007a66] text-white shadow-sm hover:bg-[#006453] hover:shadow-md dark:bg-[#00a884] dark:text-[#071b17] dark:hover:bg-[#14b894]",
+          "border border-[#006453] bg-[#007a66] text-white shadow-md hover:bg-[#006453] hover:shadow-lg dark:border-[#13b18f] dark:bg-[#00a884] dark:text-[#071b17] dark:hover:bg-[#19b997]",
         secondary:
-          "border border-border-strong bg-surface-elevated text-text shadow-xs hover:border-accent hover:bg-accent-soft hover:text-accent dark:border-[#3b4a54] dark:bg-[#202c33] dark:text-[#e9edef] dark:hover:border-[#54656f] dark:hover:bg-[#2a3942] dark:hover:text-[#e9edef]",
+          "border border-[#b7c1c7] bg-[#e8edef] text-[#111b21] shadow-sm hover:border-[#007a66] hover:bg-[#dce7e4] hover:text-[#005c4b] dark:border-[#4a5b66] dark:bg-[#26363f] dark:text-[#e9edef] dark:hover:border-[#00a884] dark:hover:bg-[#30434d] dark:hover:text-white",
         outline:
-          "border border-border-strong bg-surface text-text shadow-xs hover:border-accent hover:bg-accent-soft hover:text-accent dark:border-[#3b4a54] dark:bg-[#111b21] dark:text-[#e9edef] dark:hover:border-[#54656f] dark:hover:bg-[#202c33] dark:hover:text-[#e9edef]",
+          "border border-[#b7c1c7] bg-[#f7f9fa] text-[#1f2c33] shadow-sm hover:border-[#007a66] hover:bg-[#eaf4f1] hover:text-[#005c4b] dark:border-[#4a5b66] dark:bg-[#17242b] dark:text-[#e9edef] dark:hover:border-[#00a884] dark:hover:bg-[#202f37] dark:hover:text-white",
         ghost:
-          "border border-transparent bg-transparent text-text hover:bg-accent-soft hover:text-accent dark:text-[#d1d7db] dark:hover:bg-[#202c33] dark:hover:text-[#e9edef]",
+          "border border-transparent bg-transparent text-[#34444e] hover:bg-[#e8edef] hover:text-[#007a66] dark:text-[#d1d7db] dark:hover:bg-[#202c33] dark:hover:text-white",
         destructive:
-          "border border-error bg-error text-white shadow-sm hover:brightness-95 hover:shadow-md",
+          "border border-[#b83b45] bg-[#c44545] text-white shadow-md hover:bg-[#ad3841] hover:shadow-lg dark:border-[#ff7582] dark:bg-[#d94d5a] dark:hover:bg-[#e55c68]",
         link:
           "bg-transparent text-accent underline underline-offset-4 decoration-1 hover:decoration-2 h-auto p-0",
       },
