@@ -277,12 +277,12 @@ export function SidebarContent({
                           className={cn(
                             "relative flex items-center gap-3 rounded-md px-3 py-1 text-sm transition-colors",
                             isActive
-                              ? "bg-accent text-accent-foreground"
+                              ? "bg-surface-elevated text-foreground ring-1 ring-border/70 dark:bg-accent dark:text-accent-foreground dark:ring-0"
                               : "text-muted-foreground hover:bg-accent/10 hover:text-foreground dark:hover:bg-[#202c33] dark:hover:text-[#e9edef]",
                             collapsed && "justify-center px-2",
                           )}
                         >
-                          <Icon size={18} weight={isActive ? "fill" : "regular"} aria-hidden />
+                          <Icon size={18} weight={isActive ? "fill" : "regular"} className={isActive ? "text-accent dark:text-accent-foreground" : undefined} aria-hidden />
                           {!collapsed && <span className="truncate">{t(item.label)}</span>}
                           {item.healthDot && (
                             <ConnectionHealthDot
@@ -303,7 +303,7 @@ export function SidebarContent({
                         className={cn(
                           "flex items-center gap-3 rounded-md px-3 py-1 text-sm transition-colors",
                           pathname === group.hub.href
-                            ? "bg-accent text-accent-foreground"
+                            ? "bg-surface-elevated text-foreground ring-1 ring-border/70 dark:bg-accent dark:text-accent-foreground dark:ring-0"
                             : "text-muted-foreground hover:bg-accent/10 hover:text-foreground dark:hover:bg-[#202c33] dark:hover:text-[#e9edef]",
                           collapsed && "justify-center px-2",
                         )}
@@ -329,7 +329,7 @@ export function SidebarContent({
             className={cn(
               "mb-1 flex items-center gap-3 rounded-md px-3 py-1 text-sm transition-colors",
               pathname.startsWith(rodape.href)
-                ? "bg-accent text-accent-foreground"
+                ? "bg-surface-elevated text-foreground ring-1 ring-border/70 dark:bg-accent dark:text-accent-foreground dark:ring-0"
                 : "text-muted-foreground hover:bg-accent/10 hover:text-foreground dark:hover:bg-[#202c33] dark:hover:text-[#e9edef]",
               collapsed && "justify-center px-2",
             )}
@@ -386,7 +386,7 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
         //
         // `shrink-0` porque item de flex encolhe por padrão, e uma barra de 60
         // espremida para caber é o mesmo defeito por outro caminho.
-        "sticky top-0 z-30 flex h-screen shrink-0 flex-col border-r border-[#c9c9c9] bg-[#ebebeb] transition-[width] duration-200 dark:border-[#2a3942] dark:bg-[#111b21]",
+        "sticky top-0 z-30 flex h-screen shrink-0 flex-col border-r border-border bg-surface transition-[width] duration-200 dark:border-[#2a3942] dark:bg-[#111b21]",
         collapsed ? "w-16" : "w-60",
       )}
     >
