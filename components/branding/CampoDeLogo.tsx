@@ -42,8 +42,8 @@ import { TAMANHO_MAXIMO_DO_LOGO } from "@/lib/branding/logo";
 import { useT } from "@/hooks/i18n/useT";
 
 // Pranchetas da identidade RenaCrm, alinhadas à paleta oficial.
-const SUPERFICIE_CLARA = "#EBEBEB";
-const SUPERFICIE_ESCURA = "#211D1A";
+const SUPERFICIE_CLARA = "#ebebeb";
+const SUPERFICIE_ESCURA = "#211d1a";
 
 export type EscopoDoLogo = "instalacao" | "organizacao";
 
@@ -308,7 +308,7 @@ export function CampoDeLogo({
                 className="flex h-24 items-center justify-center rounded-lg border px-4 shadow-sm"
                 style={{
                   backgroundColor: fundo,
-                  borderColor: tema === "claro" ? "#C9C9C9" : "#2C3151",
+                  borderColor: tema === "claro" ? "#c9c9c9" : "#2c3151",
                 }}
               >
                 {usarMarcaDoProduto ? (
