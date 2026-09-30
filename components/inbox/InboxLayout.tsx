@@ -421,7 +421,7 @@ export function InboxLayout({ initialSelectedId = null }: InboxLayoutProps = {})
         )}
       >
         <InboxFilters value={filterValue} onChange={setFilterValue} />
-        <div className="min-h-0 flex-1 overflow-hidden">
+        <div className="renato-wallpaper min-h-0 flex-1 overflow-hidden">
           <ConversationList
             listQuery={listQ}
             filters={filters}
@@ -524,11 +524,11 @@ export function InboxLayout({ initialSelectedId = null }: InboxLayoutProps = {})
             />
           </>
         ) : selectionNotFound ? (
-          <div className="flex h-full items-center justify-center px-6 text-center text-sm text-muted-foreground">
+          <div className="renato-wallpaper flex h-full items-center justify-center px-6 text-center text-sm text-muted-foreground">
             {t("Conversa não encontrada ou fora do seu acesso.")}
           </div>
         ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+          <div className="renato-wallpaper flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
             <ChatCircle size={36} weight="thin" className="text-text-subtle" aria-hidden />
             <p className="text-sm font-medium text-text-muted">{t("Selecione uma conversa")}</p>
             <p className="text-xs text-text-muted">{t("Ou navegue com J e K")}</p>
