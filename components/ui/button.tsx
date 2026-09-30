@@ -5,15 +5,12 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 /**
- * Button — Sage design system.
- * Variants:
- *   - primary (default): accent fill, branded CTA
- *   - secondary: surface-elevated com border, ação neutra
- *   - ghost: transparent, hover suave (toolbar/inline)
- *   - destructive: error fill (delete/cancel destrutivo)
- *   - outline: alias de secondary com background transparente (compat shadcn)
- *   - link: text-only com underline
- *   - default: alias de primary (compat shadcn)
+ * Button — hierarquia visual do RenaCrm.
+ *
+ * A cor forte fica reservada à ação principal. Ações secundárias ganham
+ * superfície/borda suficientes para serem percebidas sem transformar toda a
+ * interface em blocos coloridos. O modo escuro usa os mesmos neutros do Inbox:
+ * #111b21 / #202c33 / #2a3942, com verde #00a884 só onde há prioridade.
  */
 const buttonVariants = cva(
   [
@@ -30,17 +27,17 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-accent text-accent-foreground hover:bg-accent-hover shadow-xs",
+          "border border-transparent bg-[#007a66] text-white shadow-sm hover:bg-[#006453] hover:shadow-md dark:bg-[#00a884] dark:text-[#071b17] dark:hover:bg-[#14b894]",
         default:
-          "bg-accent text-accent-foreground hover:bg-accent-hover shadow-xs",
+          "border border-transparent bg-[#007a66] text-white shadow-sm hover:bg-[#006453] hover:shadow-md dark:bg-[#00a884] dark:text-[#071b17] dark:hover:bg-[#14b894]",
         secondary:
-          "bg-surface-elevated text-text border border-border hover:border-accent hover:text-accent",
+          "border border-border-strong bg-surface-elevated text-text shadow-xs hover:border-accent hover:bg-accent-soft hover:text-accent dark:border-[#3b4a54] dark:bg-[#202c33] dark:text-[#e9edef] dark:hover:border-[#54656f] dark:hover:bg-[#2a3942] dark:hover:text-[#e9edef]",
         outline:
-          "bg-transparent text-text border border-border hover:border-accent hover:text-accent",
+          "border border-border-strong bg-surface text-text shadow-xs hover:border-accent hover:bg-accent-soft hover:text-accent dark:border-[#3b4a54] dark:bg-[#111b21] dark:text-[#e9edef] dark:hover:border-[#54656f] dark:hover:bg-[#202c33] dark:hover:text-[#e9edef]",
         ghost:
-          "bg-transparent text-text hover:bg-accent-soft hover:text-accent",
+          "border border-transparent bg-transparent text-text hover:bg-accent-soft hover:text-accent dark:text-[#d1d7db] dark:hover:bg-[#202c33] dark:hover:text-[#e9edef]",
         destructive:
-          "bg-error text-white hover:brightness-95 shadow-xs",
+          "border border-error bg-error text-white shadow-sm hover:brightness-95 hover:shadow-md",
         link:
           "bg-transparent text-accent underline underline-offset-4 decoration-1 hover:decoration-2 h-auto p-0",
       },
