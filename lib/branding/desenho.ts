@@ -48,6 +48,6 @@ export const LOGOTIPO = {
   sufixo: [] as readonly Glifo[],
 } as const;
 export const CORES_DA_MARCA = {
-  claro: { simbolo: "#fa6c2a", nome: "#211d1a", sufixo: "#577196" },
+  claro: { simbolo: "#007a66", nome: "#111b21", sufixo: "#54656f" },
   escuro: { simbolo: "#fa6c2a", nome: "#ebebeb", sufixo: "#c9c9c9" },
 } as const;
