@@ -46,7 +46,7 @@ export function DeleteFollowupFlowButton({
         type="button"
         variant={variant}
         size={size}
-        className="text-destructive"
+        className="border-[#dba4a8] bg-[#fff4f4] text-[#a9323b] hover:border-[#c44545] hover:bg-[#fde7e9] hover:text-[#922b33] dark:border-[#6f3940] dark:bg-[#2a1b1e] dark:text-[#ff8a95] dark:hover:border-[#d94d5a] dark:hover:bg-[#3a2227]"
         disabled={del.isPending}
         data-testid="delete-followup-flow"
         onClick={(e) => {
