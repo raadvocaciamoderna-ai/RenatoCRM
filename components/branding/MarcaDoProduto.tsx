@@ -19,16 +19,43 @@ import { cn } from "@/lib/utils";
  * contando ZERO ocorrências fora de `lib/branding.ts`.
  */
 
+type TemaDaMarca = "auto" | "claro" | "escuro";
+
 type Props = {
   readonly nome: string;
   readonly className?: string;
   /** `true` quando o texto ao lado já nomeia a marca — evita ler duas vezes. */
   readonly decorativo?: boolean;
+  /** Força a paleta em prévias claro/escuro exibidas lado a lado. */
+  readonly tema?: TemaDaMarca;
 };
 
 const SIMBOLO_CLARO_ESCURO = "fill-[#506d48] dark:fill-[#82a077]";
 const NOME_CLARO_ESCURO = "fill-[#1c1a16] dark:fill-[#f5f4ef]";
 const SUFIXO_CLARO_ESCURO = "fill-[#5d594f] dark:fill-[#8e8b7f]";
+
+const CORES_FIXAS = {
+  claro: {
+    simbolo: "fill-[#506d48]",
+    nome: "fill-[#1c1a16]",
+    sufixo: "fill-[#5d594f]",
+  },
+  escuro: {
+    simbolo: "fill-[#82a077]",
+    nome: "fill-[#f5f4ef]",
+    sufixo: "fill-[#8e8b7f]",
+  },
+} as const;
+
+function classesDeCor(tema: TemaDaMarca) {
+  if (tema === "claro") return CORES_FIXAS.claro;
+  if (tema === "escuro") return CORES_FIXAS.escuro;
+  return {
+    simbolo: SIMBOLO_CLARO_ESCURO,
+    nome: NOME_CLARO_ESCURO,
+    sufixo: SUFIXO_CLARO_ESCURO,
+  };
+}
 
 // As classes acima repetem os hexes de `CORES_DA_MARCA` porque o Tailwind só
 // gera utilitário para valor LITERAL no fonte. Quem impede os dois de divergirem
@@ -47,14 +74,20 @@ function acessibilidade(nome: string, decorativo: boolean) {
 }
 
 /** O símbolo sozinho — para a barra recolhida, avatar e cantos apertados. */
-export function SimboloDoProduto({ nome, className, decorativo = false }: Props) {
+export function SimboloDoProduto({
+  nome,
+  className,
+  decorativo = false,
+  tema = "auto",
+}: Props) {
+  const cores = classesDeCor(tema);
   return (
     <svg
       viewBox={SIMBOLO.viewBox}
       className={cn("shrink-0", className)}
       {...acessibilidade(nome, decorativo)}
     >
-      <g className={SIMBOLO_CLARO_ESCURO} transform={SIMBOLO.transform}>
+      <g className={cores.simbolo} transform={SIMBOLO.transform}>
         <path d={SIMBOLO.d} />
         <rect {...SIMBOLO.modulo} />
       </g>
@@ -63,23 +96,29 @@ export function SimboloDoProduto({ nome, className, decorativo = false }: Props)
 }
 
 /** Símbolo + nome — para a barra aberta e a fachada de entrada. */
-export function LogotipoDoProduto({ nome, className, decorativo = false }: Props) {
+export function LogotipoDoProduto({
+  nome,
+  className,
+  decorativo = false,
+  tema = "auto",
+}: Props) {
+  const cores = classesDeCor(tema);
   return (
     <svg
       viewBox={LOGOTIPO.viewBox}
       className={cn("shrink-0", className)}
       {...acessibilidade(nome, decorativo)}
     >
-      <g className={SIMBOLO_CLARO_ESCURO} transform={LOGOTIPO.simbolo.transform}>
+      <g className={cores.simbolo} transform={LOGOTIPO.simbolo.transform}>
         <path d={LOGOTIPO.simbolo.d} />
         <rect {...LOGOTIPO.simbolo.modulo} />
       </g>
-      <g className={NOME_CLARO_ESCURO}>
+      <g className={cores.nome}>
         {LOGOTIPO.nome.map((g) => (
           <path key={g.transform} transform={g.transform} d={g.d} />
         ))}
       </g>
-      <g className={SUFIXO_CLARO_ESCURO}>
+      <g className={cores.sufixo}>
         {LOGOTIPO.sufixo.map((g) => (
           <path key={g.transform} transform={g.transform} d={g.d} />
         ))}
