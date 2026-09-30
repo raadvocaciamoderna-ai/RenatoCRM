@@ -6,8 +6,9 @@ import { cn } from "@/lib/utils";
  * ninguém configurou marca própria (`marcaEhADoProduto`, em `lib/branding.ts`).
  *
  * Inline, e não `<img src="/algo.svg">`, por três motivos:
- *  - as cores seguem o TEMA: sálvia mais clara e nome em creme no escuro, como
- *    a régua do produto já define — um arquivo estático teria uma cor só;
+ *  - as cores seguem o TEMA e a paleta oficial do RenatoCRM — laranja de
+ *    destaque, azul de apoio e neutros escuro/claro; um arquivo estático teria
+ *    uma cor só;
  *  - nada em `public/`: um `.svg` fixo ali seria servido na instalação de um
  *    revendedor que configurou a marca dele (ver `lib/branding/desenho.ts`);
  *  - a barra lateral já usa `<img>` para o logo CONFIGURADO, e o e2e
@@ -30,20 +31,20 @@ type Props = {
   readonly tema?: TemaDaMarca;
 };
 
-const SIMBOLO_CLARO_ESCURO = "fill-[#506d48] dark:fill-[#82a077]";
-const NOME_CLARO_ESCURO = "fill-[#1c1a16] dark:fill-[#f5f4ef]";
-const SUFIXO_CLARO_ESCURO = "fill-[#5d594f] dark:fill-[#8e8b7f]";
+const SIMBOLO_CLARO_ESCURO = "fill-[#FA6C2A] dark:fill-[#FA6C2A]";
+const NOME_CLARO_ESCURO = "fill-[#211D1A] dark:fill-[#EBEBEB]";
+const SUFIXO_CLARO_ESCURO = "fill-[#577196] dark:fill-[#C9C9C9]";
 
 const CORES_FIXAS = {
   claro: {
-    simbolo: "fill-[#506d48]",
-    nome: "fill-[#1c1a16]",
-    sufixo: "fill-[#5d594f]",
+    simbolo: "fill-[#FA6C2A]",
+    nome: "fill-[#211D1A]",
+    sufixo: "fill-[#577196]",
   },
   escuro: {
-    simbolo: "fill-[#82a077]",
-    nome: "fill-[#f5f4ef]",
-    sufixo: "fill-[#8e8b7f]",
+    simbolo: "fill-[#FA6C2A]",
+    nome: "fill-[#EBEBEB]",
+    sufixo: "fill-[#C9C9C9]",
   },
 } as const;
 
