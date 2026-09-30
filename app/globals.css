@@ -327,73 +327,73 @@
 }
 
 [data-theme="dark"] {
-  /* Surfaces (dark — drawn) */
-  --color-bg: #161510;
-  --color-surface: #1d1c17;
-  --color-surface-elevated: #272620;
-  --color-overlay: rgba(0, 0, 0, 0.55);
+  /* Superfícies — referência visual do chat enviado pelo proprietário */
+  --color-bg: #0b141a;
+  --color-surface: #111b21;
+  --color-surface-elevated: #202c33;
+  --color-overlay: rgba(0, 0, 0, 0.62);
 
-  /* Text (dark) */
-  --color-text: #f5f4ef;
-  --color-text-muted: #8e8b7f;
-  --color-text-subtle: #605e54;
+  /* Texto */
+  --color-text: #e9edef;
+  --color-text-muted: #8696a0;
+  --color-text-subtle: #667781;
 
-  /* Borders (dark) */
-  --color-border: #33312a;
-  --color-border-strong: #444239;
+  /* Bordas e divisores */
+  --color-border: #2a3942;
+  --color-border-strong: #3b4a54;
 
-  /* Accent stays same hex stops; default shifts up for dark contrast */
-  --color-accent-50:  #f3f6f1;
-  --color-accent-100: #e4ebe0;
-  --color-accent-200: #c8d6c1;
-  --color-accent-300: #a4ba9a;
-  --color-accent-400: #82a077;
-  --color-accent-500: #67885d;
-  --color-accent-600: #506d48;
-  --color-accent-700: #41573b;
-  --color-accent-800: #374731;
-  --color-accent-900: #2f3c2b;
-  --color-accent-950: #171f15;
-  --color-accent: var(--color-accent-400);
-  --color-accent-fg: #161510;
-  --color-accent-soft: rgba(130, 160, 119, 0.16);
-  --color-accent-hover: var(--color-accent-300);
+  /* Accent — verde, reservado a ação/estado */
+  --color-accent-50:  #e7f8f4;
+  --color-accent-100: #c9f0e7;
+  --color-accent-200: #9de3d3;
+  --color-accent-300: #6bd3bc;
+  --color-accent-400: #32c5a3;
+  --color-accent-500: #00a884;
+  --color-accent-600: #008f72;
+  --color-accent-700: #00745d;
+  --color-accent-800: #005c4b;
+  --color-accent-900: #004638;
+  --color-accent-950: #002f26;
+  --color-accent: var(--color-accent-500);
+  --color-accent-fg: #071b17;
+  --color-accent-soft: rgba(0, 168, 132, 0.16);
+  --color-accent-hover: var(--color-accent-400);
 
-  /* Neutrals — greige (11 stops, dark) */
-  --color-neutral-50:  #f5f4ef;
-  --color-neutral-100: #e6e4dc;
-  --color-neutral-200: #bbb8ac;
-  --color-neutral-300: #8e8b7f;
-  --color-neutral-400: #605e54;
-  --color-neutral-500: #444239;
-  --color-neutral-600: #33312a;
-  --color-neutral-700: #272620;
-  --color-neutral-800: #1d1c17;
-  --color-neutral-900: #161510;
-  --color-neutral-950: #0c0b08;
+  /* Neutros azulados */
+  --color-neutral-50:  #e9edef;
+  --color-neutral-100: #d1d7db;
+  --color-neutral-200: #aebac1;
+  --color-neutral-300: #8696a0;
+  --color-neutral-400: #667781;
+  --color-neutral-500: #54656f;
+  --color-neutral-600: #3b4a54;
+  --color-neutral-700: #2a3942;
+  --color-neutral-800: #202c33;
+  --color-neutral-900: #111b21;
+  --color-neutral-950: #0b141a;
 
-  /* States (dark) */
-  --color-success: #82a077;
-  --color-success-bg: rgba(130, 160, 119, 0.18);
-  --color-success-fg: #a4ba9a;
-  --color-warning: #d09455;
-  --color-warning-bg: rgba(208, 148, 85, 0.18);
-  --color-warning-fg: #e0ad77;
-  --color-error: #c87263;
-  --color-error-bg: rgba(200, 114, 99, 0.18);
-  --color-error-fg: #d99182;
-  --color-info: #7da9bf;
-  --color-info-bg: rgba(125, 169, 191, 0.18);
-  --color-info-fg: #9bbfd2;
+  /* Estados */
+  --color-success: #00a884;
+  --color-success-bg: rgba(0, 168, 132, 0.16);
+  --color-success-fg: #6bd3bc;
+  --color-warning: #e9a23b;
+  --color-warning-bg: rgba(233, 162, 59, 0.16);
+  --color-warning-fg: #f3c77b;
+  --color-error: #f15c6d;
+  --color-error-bg: rgba(241, 92, 109, 0.16);
+  --color-error-fg: #ff9aa7;
+  --color-info: #53bdeb;
+  --color-info-bg: rgba(83, 189, 235, 0.16);
+  --color-info-fg: #9ddcf6;
 
-  /* Shadows — heavier in dark */
-  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.30);
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.40), 0 1px 1px 0 rgba(0, 0, 0, 0.20);
-  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.45), 0 2px 4px -1px rgba(0, 0, 0, 0.30);
-  --shadow-lg: 0 12px 32px -6px rgba(0, 0, 0, 0.55), 0 4px 12px -2px rgba(0, 0, 0, 0.40);
-  --shadow-xl: 0 24px 48px -12px rgba(0, 0, 0, 0.65), 0 8px 16px -4px rgba(0, 0, 0, 0.50);
+  /* Sombras */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.32);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.42), 0 1px 1px 0 rgba(0, 0, 0, 0.22);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.48), 0 2px 4px -1px rgba(0, 0, 0, 0.34);
+  --shadow-lg: 0 12px 32px -6px rgba(0, 0, 0, 0.58), 0 4px 12px -2px rgba(0, 0, 0, 0.42);
+  --shadow-xl: 0 24px 48px -12px rgba(0, 0, 0, 0.68), 0 8px 16px -4px rgba(0, 0, 0, 0.52);
 
-  /* shadcn-compat aliases */
+  /* shadcn compat */
   --background: var(--color-bg);
   --foreground: var(--color-text);
   --card: var(--color-surface);
@@ -411,19 +411,16 @@
   --destructive-foreground: #ffffff;
   --border: var(--color-border);
   --input: var(--color-border);
-  --ring: var(--color-accent-400);
-  /* ---- Agenda · cor de pessoa (tema escuro) ----------------------------
-   * Mais claras e menos saturadas que as do claro: sobre `#161510` a versão
-   * escura de cada matiz sumiria. Mesma ordem, mesmos nomes.
-   */
-  --agenda-pessoa-1: #f89080;
-  --agenda-pessoa-2: #ca8931;
-  --agenda-pessoa-3: #d1bf55;
-  --agenda-pessoa-4: #0cafa8;
-  --agenda-pessoa-5: #4ccffb;
+  --ring: var(--color-accent-500);
+
+  --agenda-pessoa-1: #ff8a80;
+  --agenda-pessoa-2: #e9a23b;
+  --agenda-pessoa-3: #c7bb58;
+  --agenda-pessoa-4: #00a884;
+  --agenda-pessoa-5: #53bdeb;
   --agenda-pessoa-6: #6c97e7;
-  --agenda-pessoa-7: #be9ef6;
-  --agenda-pessoa-8: #cc77b1;
+  --agenda-pessoa-7: #a98df3;
+  --agenda-pessoa-8: #d986b8;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -1005,18 +1002,18 @@
 
 
 /* ---- RenatoCRM · padrão gráfico institucional ----------------------------
-   Símbolo da identidade aplicado como textura real no painel do chat.
-   O SVG fica inline no CSS para não depender de carregamento externo. */
+   Padrão discreto inspirado no fundo do chat de referência: desenho cinza sobre
+   preto azulado; verde fica reservado a ações e estados ativos. */
 .renato-wallpaper {
   background-color: #ebebeb;
-  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22180%22%20height%3D%22156%22%20viewBox%3D%220%200%20180%20156%22%3E%0A%20%20%3Cg%20fill%3D%22none%22%20stroke%3D%22%23577196%22%20stroke-width%3D%224%22%20opacity%3D%220.34%22%20transform%3D%22translate(-6%2C-8)%22%3E%0A%20%20%20%20%3Cpath%20d%3D%22M90%2012%2049%2034v48l24%2014V58l-12%208%202%204%207-4v23L54%2080V38l36-20%2036%2020v42l-16%209V66l7%204%202-4-12-8v38l24-14V34z%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M84%2042v-8l6-4%206%204v8l13%207v-8l6%204v9h4V43l-12-8v9l-7-4v-7l-10-6-10%206v7l-7%204v-9l-12%208v11h4v-9l6-4v8z%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M78%2094V78l12-8%2012%208v16l-10-6h-4zm-4-18v42l10%206%202-4-8-5V98l12-7%2012%207v17l-8%205%202%204%2010-6V76L90%2064z%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22180%22%20height%3D%22156%22%20viewBox%3D%220%200%20180%20156%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23aebac1%22%20stroke-width%3D%224%22%20opacity%3D%220.38%22%20transform%3D%22translate(-6%2C-8)%22%3E%3Cpath%20d%3D%22M90%2012%2049%2034v48l24%2014V58l-12%208%202%204%207-4v23L54%2080V38l36-20%2036%2020v42l-16%209V66l7%204%202-4-12-8v38l24-14V34z%22%2F%3E%3Cpath%20d%3D%22M84%2042v-8l6-4%206%204v8l13%207v-8l6%204v9h4V43l-12-8v9l-7-4v-7l-10-6-10%206v7l-7%204v-9l-12%208v11h4v-9l6-4v8z%22%2F%3E%3Cpath%20d%3D%22M78%2094V78l12-8%2012%208v16l-10-6h-4zm-4-18v42l10%206%202-4-8-5V98l12-7%2012%207v17l-8%205%202%204%2010-6V76L90%2064z%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
   background-repeat: repeat;
   background-size: 180px 156px;
   background-position: center top;
 }
 
 [data-theme="dark"] .renato-wallpaper {
-  background-color: #211d1a;
-  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22180%22%20height%3D%22156%22%20viewBox%3D%220%200%20180%20156%22%3E%0A%20%20%3Cg%20fill%3D%22none%22%20stroke%3D%22%23577196%22%20stroke-width%3D%224%22%20opacity%3D%220.34%22%20transform%3D%22translate(-6%2C-8)%22%3E%0A%20%20%20%20%3Cpath%20d%3D%22M90%2012%2049%2034v48l24%2014V58l-12%208%202%204%207-4v23L54%2080V38l36-20%2036%2020v42l-16%209V66l7%204%202-4-12-8v38l24-14V34z%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M84%2042v-8l6-4%206%204v8l13%207v-8l6%204v9h4V43l-12-8v9l-7-4v-7l-10-6-10%206v7l-7%204v-9l-12%208v11h4v-9l6-4v8z%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M78%2094V78l12-8%2012%208v16l-10-6h-4zm-4-18v42l10%206%202-4-8-5V98l12-7%2012%207v17l-8%205%202%204%2010-6V76L90%2064z%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E");
+  background-color: #0b141a;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22180%22%20height%3D%22156%22%20viewBox%3D%220%200%20180%20156%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%232a3942%22%20stroke-width%3D%224%22%20opacity%3D%220.78%22%20transform%3D%22translate(-6%2C-8)%22%3E%3Cpath%20d%3D%22M90%2012%2049%2034v48l24%2014V58l-12%208%202%204%207-4v23L54%2080V38l36-20%2036%2020v42l-16%209V66l7%204%202-4-12-8v38l24-14V34z%22%2F%3E%3Cpath%20d%3D%22M84%2042v-8l6-4%206%204v8l13%207v-8l6%204v9h4V43l-12-8v9l-7-4v-7l-10-6-10%206v7l-7%204v-9l-12%208v11h4v-9l6-4v8z%22%2F%3E%3Cpath%20d%3D%22M78%2094V78l12-8%2012%208v16l-10-6h-4zm-4-18v42l10%206%202-4-8-5V98l12-7%2012%207v17l-8%205%202%204%2010-6V76L90%2064z%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
 }
 
