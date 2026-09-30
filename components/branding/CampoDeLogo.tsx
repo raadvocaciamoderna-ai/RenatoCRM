@@ -35,8 +35,10 @@ import { useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { LogotipoDoProduto } from "@/components/branding/MarcaDoProduto";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { DEFAULT_APP_NAME } from "@/lib/branding";
 import { melhorFrenteSobre } from "@/lib/branding/contraste";
 import { TAMANHO_MAXIMO_DO_LOGO } from "@/lib/branding/logo";
 import { REGUA_DO_PRODUTO } from "@/lib/branding/regua-do-produto";
@@ -51,8 +53,9 @@ function superficie(tema: "claro" | "escuro"): string {
   return encontrada?.hex ?? REGUA_DO_PRODUTO[tema].base[0]?.hex ?? "#ffffff";
 }
 
-const SUPERFICIE_CLARA = superficie("claro");
-const SUPERFICIE_ESCURA = superficie("escuro");
+// Pranchetas da identidade RenaCrm: creme no claro e verde-floresta no escuro.
+const SUPERFICIE_CLARA = "#f5f4ef";
+const SUPERFICIE_ESCURA = "#354b2d";
 
 export type EscopoDoLogo = "instalacao" | "organizacao";
 
@@ -177,6 +180,11 @@ export function CampoDeLogo({
   }
 
   const emVigor = logoGravado ?? logoHerdado;
+  const logoEhDoProduto =
+    typeof emVigor === "string" &&
+    /\/docs\/brand\/renacrm-logo(?:-dark)?\.svg(?:[?#].*)?$/i.test(emVigor);
+  const usarMarcaDoProduto =
+    nomeEmVigor === DEFAULT_APP_NAME && (emVigor === null || logoEhDoProduto);
 
   /**
    * O `logo_url` que a rota acabou de gravar para ESTA camada.
@@ -302,54 +310,36 @@ export function CampoDeLogo({
         <div className="grid gap-3 sm:grid-cols-2">
           {(
             [
-              { rotulo: t("Aparência clara"), fundo: SUPERFICIE_CLARA },
-              { rotulo: t("Aparência escura"), fundo: SUPERFICIE_ESCURA },
+              { rotulo: t("Aparência clara"), fundo: SUPERFICIE_CLARA, tema: "claro" as const },
+              { rotulo: t("Aparência escura"), fundo: SUPERFICIE_ESCURA, tema: "escuro" as const },
             ] as const
-          ).map(({ rotulo, fundo }) => (
+          ).map(({ rotulo, fundo, tema }) => (
             <div key={rotulo} className="space-y-1">
               <div
                 data-previa-do-logo={rotulo === t("Aparência clara") ? "claro" : "escuro"}
-                className="flex h-24 items-center justify-center rounded-sm border border-border px-4"
-                style={{ backgroundColor: fundo }}
+                className="flex h-24 items-center justify-center rounded-lg border px-4 shadow-sm"
+                style={{
+                  backgroundColor: fundo,
+                  borderColor: tema === "claro" ? "#d8d2c4" : "#587150",
+                }}
               >
-                {emVigor ? (
-                  // O chip claro na aparência escura é o MESMO que a barra
-                  // lateral e a tela de entrada aplicam de verdade
-                  // (`components/shell/Sidebar.tsx`, `app/(public)/layout.tsx`):
-                  // esta prévia deixaria de ser prévia se mostrasse o logo cru
-                  // onde o app real desenha um chip por baixo. Aqui não dá pra
-                  // usar a variante `dark:` do Tailwind — as duas caixas
-                  // renderizam lado a lado no MESMO tema real, simulando os
-                  // dois via `style` — então a condição é o rótulo da caixa, não
-                  // o tema da página.
-                  <span
-                    className={
-                      rotulo === t("Aparência escura")
-                        ? "rounded-md bg-white px-2 py-1 shadow-sm"
-                        : undefined
-                    }
-                  >
-                    {/* <img> e não next/image pelo mesmo motivo da barra lateral e da
-                      tela de acesso: a URL é do projeto de quem hospeda, e
-                      `next/image` exige allowlist de domínios fechada em BUILD — a
-                      imagem pré-buildada do self-host recusaria o domínio do
-                      operador. Altura fixa e largura livre para não distorcer arte
-                      de proporção desconhecida. */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={emVigor}
-                      alt={nomeEmVigor}
-                      className="max-h-12 w-auto max-w-full object-contain"
-                    />
-                  </span>
+                {usarMarcaDoProduto ? (
+                  <LogotipoDoProduto
+                    nome={nomeEmVigor}
+                    tema={tema}
+                    className="h-10 w-auto max-w-full"
+                  />
+                ) : emVigor ? (
+                  // Logo personalizada: sem moldura branca artificial.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={emVigor}
+                    alt={nomeEmVigor}
+                    className="max-h-12 w-auto max-w-full object-contain"
+                  />
                 ) : (
                   <span
                     className="text-sm font-semibold tracking-tight"
-                    // O texto acompanha a SUPERFÍCIE, não o tema em que a pessoa
-                    // está: um `text-*` do Tailwind sumiria no quadro oposto. E a
-                    // cor sai de `melhorFrenteSobre` — a mesma função que decide
-                    // a cor do texto sobre os botões da marca —, nunca de um hex
-                    // digitado aqui.
                     style={{ color: melhorFrenteSobre(fundo) }}
                   >
                     {nomeEmVigor}
