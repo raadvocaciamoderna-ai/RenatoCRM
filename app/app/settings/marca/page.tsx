@@ -68,7 +68,7 @@ export default async function MarcaDaOrganizacaoPage() {
   return (
     <div className="flex h-full flex-col gap-6 overflow-y-auto p-6">
       <header>
-        <h1 className="sr-only">{traduzir("Configuração da identidade visual", idioma)}</h1>
+        <h1 className="sr-only">{traduzir("Marca", idioma)}</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
           {traduzir("O nome e a cor que a sua empresa mostra para quem trabalha aqui dentro.", idioma)}
         </p>
