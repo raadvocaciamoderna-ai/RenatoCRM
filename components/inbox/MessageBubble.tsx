@@ -165,10 +165,12 @@ export function MessageBubble({
             : cn(
                 "rounded-2xl px-3 py-2 shadow-sm",
                 isOutbound
-                  ? "rounded-br-sm bg-primary text-primary-foreground"
-                  : "rounded-bl-sm bg-muted text-foreground",
+                  ? "rounded-br-sm bg-primary text-primary-foreground dark:bg-[#005c4b] dark:text-[#e9edef]"
+                  : "rounded-bl-sm bg-muted text-foreground dark:bg-[#202c33] dark:text-[#e9edef]",
               ),
-          isFailed && "border border-destructive",
+          // Falha continua indicada pelo ícone/rótulo "Falhou", sem contorno
+          // laranja/vermelho envolvendo a mensagem inteira.
+          isFailed && "border-0",
         )}
       >
         {/*
@@ -245,7 +247,9 @@ export function MessageBubble({
         <div
           className={cn(
             "mt-1 flex items-center justify-end gap-1 text-[10px]",
-            isOutbound ? "text-primary-foreground" : "text-muted-foreground",
+            isOutbound
+              ? "text-primary-foreground dark:text-[#d1d7db]"
+              : "text-muted-foreground dark:text-[#8696a0]",
           )}
         >
           {editada && (
