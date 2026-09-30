@@ -31,15 +31,15 @@ type Props = {
   readonly tema?: TemaDaMarca;
 };
 
-const SIMBOLO_CLARO_ESCURO = "fill-[#fa6c2a] dark:fill-[#00a884]";
-const NOME_CLARO_ESCURO = "fill-[#211d1a] dark:fill-[#e9edef]";
-const SUFIXO_CLARO_ESCURO = "fill-[#577196] dark:fill-[#8696a0]";
+const SIMBOLO_CLARO_ESCURO = "fill-[#007a66] dark:fill-[#00a884]";
+const NOME_CLARO_ESCURO = "fill-[#111b21] dark:fill-[#e9edef]";
+const SUFIXO_CLARO_ESCURO = "fill-[#54656f] dark:fill-[#8696a0]";
 
 const CORES_FIXAS = {
   claro: {
-    simbolo: "fill-[#fa6c2a]",
-    nome: "fill-[#211d1a]",
-    sufixo: "fill-[#577196]",
+    simbolo: "fill-[#007a66]",
+    nome: "fill-[#111b21]",
+    sufixo: "fill-[#54656f]",
   },
   escuro: {
     simbolo: "fill-[#00a884]",
