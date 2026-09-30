@@ -17,9 +17,8 @@
  * entrelaçado e para JPEG, e terminaria escrevendo em português o que estas duas
  * caixas mostram com precisão total e zero linha de parser.
  *
- * Para a identidade RenaCrm, as pranchetas usam creme no claro e verde-floresta
- * no escuro. A intenção é avaliar a logo no contexto visual aprovado, sem o
- * retângulo branco que destoava no modo escuro.
+ * Para a identidade RenaCrm, as pranchetas usam a paleta oficial: cinza claro
+ * no tema claro e marrom-preto no tema escuro, sem moldura branca artificial.
  *
  * ── Por que o upload é IMEDIATO, e não parte do "Salvar" do formulário ───────
  *
@@ -42,9 +41,9 @@ import { melhorFrenteSobre } from "@/lib/branding/contraste";
 import { TAMANHO_MAXIMO_DO_LOGO } from "@/lib/branding/logo";
 import { useT } from "@/hooks/i18n/useT";
 
-// Pranchetas da identidade RenaCrm: creme no claro e verde-floresta no escuro.
-const SUPERFICIE_CLARA = "#f5f4ef";
-const SUPERFICIE_ESCURA = "#354b2d";
+// Pranchetas da identidade RenaCrm, alinhadas à paleta oficial.
+const SUPERFICIE_CLARA = "#EBEBEB";
+const SUPERFICIE_ESCURA = "#211D1A";
 
 export type EscopoDoLogo = "instalacao" | "organizacao";
 
@@ -309,7 +308,7 @@ export function CampoDeLogo({
                 className="flex h-24 items-center justify-center rounded-lg border px-4 shadow-sm"
                 style={{
                   backgroundColor: fundo,
-                  borderColor: tema === "claro" ? "#d8d2c4" : "#587150",
+                  borderColor: tema === "claro" ? "#C9C9C9" : "#2C3151",
                 }}
               >
                 {usarMarcaDoProduto ? (
