@@ -450,12 +450,6 @@ export function InboxLayout({ initialSelectedId = null }: InboxLayoutProps = {})
           "renato-wallpaper h-full min-h-0 flex-col md:flex",
           colunas.conversa,
         )}
-        style={{
-          backgroundImage: 'url("/brand/padrao-renato-dark.svg")',
-          backgroundRepeat: "repeat",
-          backgroundSize: "145px 127px",
-          backgroundPosition: "center top",
-        }}
       >
         {/*
           A barra do celular vive FORA do ramo da conversa carregada: o caminho
