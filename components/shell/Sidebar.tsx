@@ -277,8 +277,8 @@ export function SidebarContent({
                           className={cn(
                             "relative flex items-center gap-3 rounded-md px-3 py-1 text-sm transition-colors",
                             isActive
-                              ? "bg-[#577196] text-[#EBEBEB]"
-                              : "text-muted-foreground hover:bg-[#C9C9C9]/35 hover:text-[#211D1A] dark:hover:bg-[#2C3151] dark:hover:text-[#EBEBEB]",
+                              ? "bg-[#577196] text-[#ebebeb]"
+                              : "text-muted-foreground hover:bg-[#c9c9c9]/35 hover:text-[#211d1a] dark:hover:bg-[#2c3151] dark:hover:text-[#ebebeb]",
                             collapsed && "justify-center px-2",
                           )}
                         >
@@ -303,8 +303,8 @@ export function SidebarContent({
                         className={cn(
                           "flex items-center gap-3 rounded-md px-3 py-1 text-sm transition-colors",
                           pathname === group.hub.href
-                            ? "bg-[#577196] text-[#EBEBEB]"
-                            : "text-muted-foreground hover:bg-[#C9C9C9]/35 hover:text-[#211D1A] dark:hover:bg-[#2C3151] dark:hover:text-[#EBEBEB]",
+                            ? "bg-[#577196] text-[#ebebeb]"
+                            : "text-muted-foreground hover:bg-[#c9c9c9]/35 hover:text-[#211d1a] dark:hover:bg-[#2c3151] dark:hover:text-[#ebebeb]",
                           collapsed && "justify-center px-2",
                         )}
                       >
@@ -329,8 +329,8 @@ export function SidebarContent({
             className={cn(
               "mb-1 flex items-center gap-3 rounded-md px-3 py-1 text-sm transition-colors",
               pathname.startsWith(rodape.href)
-                ? "bg-[#577196] text-[#EBEBEB]"
-                : "text-muted-foreground hover:bg-[#C9C9C9]/35 hover:text-[#211D1A] dark:hover:bg-[#2C3151] dark:hover:text-[#EBEBEB]",
+                ? "bg-[#577196] text-[#ebebeb]"
+                : "text-muted-foreground hover:bg-[#c9c9c9]/35 hover:text-[#211d1a] dark:hover:bg-[#2c3151] dark:hover:text-[#ebebeb]",
               collapsed && "justify-center px-2",
             )}
           >
@@ -386,7 +386,7 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
         //
         // `shrink-0` porque item de flex encolhe por padrão, e uma barra de 60
         // espremida para caber é o mesmo defeito por outro caminho.
-        "sticky top-0 z-30 flex h-screen shrink-0 flex-col border-r border-[#C9C9C9] bg-[#EBEBEB] transition-[width] duration-200 dark:border-[#2C3151] dark:bg-[#211D1A]",
+        "sticky top-0 z-30 flex h-screen shrink-0 flex-col border-r border-[#c9c9c9] bg-[#ebebeb] transition-[width] duration-200 dark:border-[#2c3151] dark:bg-[#211d1a]",
         collapsed ? "w-16" : "w-60",
       )}
     >
