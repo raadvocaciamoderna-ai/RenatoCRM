@@ -1005,41 +1005,19 @@
 
 
 /* ---- RenatoCRM · padrão gráfico institucional ----------------------------
-   O elemento vem da identidade enviada pelo proprietário e é usado como
-   textura, não como conteúdo. Mantém contraste baixo para não competir com
-   mensagens, formulários ou dados operacionais. */
+   Textura da identidade visual aplicada diretamente como background-image.
+   Não usa CSS mask: isso evita diferenças de suporte/renderização entre
+   navegadores e garante o desenho visível no Inbox. */
 .renato-wallpaper {
-  position: relative;
-  isolation: isolate;
   background-color: #ebebeb;
-}
-
-.renato-wallpaper::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-color: #577196;
-  opacity: 0.09;
-  -webkit-mask-image: url("/brand/padrao-renato.svg");
-  mask-image: url("/brand/padrao-renato.svg");
-  -webkit-mask-repeat: repeat;
-  mask-repeat: repeat;
-  -webkit-mask-size: 260px 228px;
-  mask-size: 260px 228px;
-}
-
-.renato-wallpaper > * {
-  position: relative;
-  z-index: 1;
+  background-image: url("/brand/padrao-renato-light.svg");
+  background-repeat: repeat;
+  background-size: 190px 166px;
+  background-position: center top;
 }
 
 [data-theme="dark"] .renato-wallpaper {
   background-color: #211d1a;
+  background-image: url("/brand/padrao-renato-dark.svg");
 }
 
-[data-theme="dark"] .renato-wallpaper::before {
-  background-color: #577196;
-  opacity: 0.18;
-}
