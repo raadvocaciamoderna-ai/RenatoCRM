@@ -1002,3 +1002,44 @@
     transform: none;
   }
 }
+
+
+/* ---- RenatoCRM · padrão gráfico institucional ----------------------------
+   O elemento vem da identidade enviada pelo proprietário e é usado como
+   textura, não como conteúdo. Mantém contraste baixo para não competir com
+   mensagens, formulários ou dados operacionais. */
+.renato-wallpaper {
+  position: relative;
+  isolation: isolate;
+  background-color: #ebebeb;
+}
+
+.renato-wallpaper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: #577196;
+  opacity: 0.09;
+  -webkit-mask-image: url("/brand/padrao-renato.svg");
+  mask-image: url("/brand/padrao-renato.svg");
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 260px 228px;
+  mask-size: 260px 228px;
+}
+
+.renato-wallpaper > * {
+  position: relative;
+  z-index: 1;
+}
+
+[data-theme="dark"] .renato-wallpaper {
+  background-color: #211d1a;
+}
+
+[data-theme="dark"] .renato-wallpaper::before {
+  background-color: #577196;
+  opacity: 0.18;
+}
