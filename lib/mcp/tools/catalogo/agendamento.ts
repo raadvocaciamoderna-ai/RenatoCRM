@@ -154,9 +154,10 @@
  * ligar o pacote (não bastaria). Isso não é motivo para escolher `vender`, mas é
  * o custo que a escolha por `atender` teria, e ele está aqui para quem reabrir.
  *
- * **Decisão de pacote PRÓPRIO (`agendar`) segue pendente com o maestro** — foi
- * levantada em `CONTRATO-MCP-agenda.md` §7 antes de existir código. `vender` é o
- * lar que não estoura nada hoje e não parte a família.
+ * **A família de agenda pertence aos agentes que atendem e vendem.** Um agente de atendimento
+ * precisa conseguir concluir a conversa com um horário, e o agente de vendas também pode
+ * converter uma oportunidade em consulta. Por isso as ferramentas entram nos dois pacotes,
+ * mantendo a família inteira disponível.
  */
 import { declararTools } from "./tipos";
 
@@ -173,7 +174,7 @@ export const TOOLS_AGENDAMENTO = declararTools([
       "Mostra os tipos de atendimento que dá para marcar, quanto cada um dura e como é feito, para o atendente de IA falar do que existe de verdade.",
     oQueToca: "Agenda da equipe",
     risco: "seguro",
-    pacotes: ["vender"],
+    pacotes: ["atender", "vender"],
   },
   {
     name: "crm_find_free_slots",
@@ -183,7 +184,7 @@ export const TOOLS_AGENDAMENTO = declararTools([
       "Mostra os horários em que um atendente pode receber, já descontando as folgas dele, o que ele tem marcado e os compromissos da agenda pessoal.",
     oQueToca: "Agenda da equipe",
     risco: "seguro",
-    pacotes: ["vender"],
+    pacotes: ["atender", "vender"],
   },
   {
     name: "crm_list_appointments",
@@ -193,7 +194,7 @@ export const TOOLS_AGENDAMENTO = declararTools([
       "Lista os compromissos com hora marcada de um cliente ou de um dia, com a situação de cada um: marcado, realizado ou desmarcado.",
     oQueToca: "Agenda da equipe",
     risco: "seguro",
-    pacotes: ["vender"],
+    pacotes: ["atender", "vender"],
   },
   {
     name: "crm_find_and_book_appointment",
@@ -205,7 +206,7 @@ export const TOOLS_AGENDAMENTO = declararTools([
     // `atencao`, igual a `crm_book_appointment`: o que ela faz a mais é a
     // consulta, e o efeito que persiste é o mesmo marcar — que se desfaz.
     risco: "atencao",
-    pacotes: ["vender"],
+    pacotes: ["atender", "vender"],
   },
   {
     name: "crm_book_appointment",
@@ -216,7 +217,7 @@ export const TOOLS_AGENDAMENTO = declararTools([
     oQueToca: "Agenda da equipe",
     // `atencao` e não `critico`: marcar errado se desfaz — remarca ou desmarca.
     risco: "atencao",
-    pacotes: ["vender"],
+    pacotes: ["atender", "vender"],
   },
   {
     name: "crm_reschedule_appointment",
@@ -226,7 +227,7 @@ export const TOOLS_AGENDAMENTO = declararTools([
       "Move um compromisso já marcado para outro horário, mantendo o mesmo cliente e o mesmo tipo de atendimento.",
     oQueToca: "Agenda da equipe",
     risco: "atencao",
-    pacotes: ["vender"],
+    pacotes: ["atender", "vender"],
   },
   {
     name: "crm_confirm_appointment",
@@ -237,7 +238,7 @@ export const TOOLS_AGENDAMENTO = declararTools([
     oQueToca: "Agenda da equipe",
     // `atencao` e não `critico`: confirmar errado se desfaz — remarca ou desmarca.
     risco: "atencao",
-    pacotes: ["vender"],
+    pacotes: ["atender", "vender"],
   },
   {
     name: "crm_set_appointment_outcome",
@@ -249,7 +250,7 @@ export const TOOLS_AGENDAMENTO = declararTools([
     // `atencao`: registrar falta devolve o horário para outra pessoa, mas o
     // sistema recusa fazer isso antes da hora — a guarda mora no handler.
     risco: "atencao",
-    pacotes: ["vender"],
+    pacotes: ["atender", "vender"],
   },
   {
     name: "crm_cancel_appointment",
@@ -264,6 +265,6 @@ export const TOOLS_AGENDAMENTO = declararTools([
     // nunca entra por pacote, então a IA marca assim que o pacote é ligado e só
     // desmarca se o dono ligar explicitamente. Falha fechado no lado certo.
     risco: "critico",
-    pacotes: ["vender"],
+    pacotes: ["atender", "vender"],
   },
 ]);
