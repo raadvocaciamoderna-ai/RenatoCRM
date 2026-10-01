@@ -1014,9 +1014,9 @@
 
 [data-theme="dark"] .renato-wallpaper {
   background-color: #0b141a;
-  background-image: url("/brand/padrao-renato-dark.svg?v=soft-20261001-2");
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22180%22%20height%3D%22156%22%20viewBox%3D%220%200%20180%20156%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%2326363f%22%20stroke-width%3D%222.2%22%20opacity%3D%220.32%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20transform%3D%22translate(-6%2C-8)%22%3E%3Cpath%20d%3D%22M90%2012%2049%2034v48l24%2014V58l-12%208%202%204%207-4v23L54%2080V38l36-20%2036%2020v42l-16%209V66l7%204%202-4-12-8v38l24-14V34z%22%2F%3E%3Cpath%20d%3D%22M84%2042v-8l6-4%206%204v8l13%207v-8l6%204v9h4V43l-12-8v9l-7-4v-7l-10-6-10%206v7l-7%204v-9l-12%208v11h4v-9l6-4v8z%22%2F%3E%3Cpath%20d%3D%22M78%2094V78l12-8%2012%208v16l-10-6h-4zm-4-18v42l10%206%202-4-8-5V98l12-7%2012%207v17l-8%205%202%204%2010-6V76L90%2064z%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
   background-repeat: repeat;
-  background-size: 145px 127px;
+  background-size: 190px 165px;
   background-position: center top;
 }
 
