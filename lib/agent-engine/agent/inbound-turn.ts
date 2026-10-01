@@ -178,6 +178,7 @@ import {
 } from '../guardrails/jailbreak/classifier';
 import { camadaLigada, lerCamadasDaOrg } from '../guardrails/camadas-da-org';
 import { fusoDaOrganizacao } from './fuso-da-org';
+import { pedidoDeDisponibilidadeAgenda } from './agenda-disponibilidade';
 import { renderAgora } from '@/lib/tempo/agora';
 import { decidirElegibilidadeDaConversa } from '@/lib/ai/elegibilidade/consulta-pg';
 
@@ -2843,6 +2844,23 @@ async function executarTurnoDoAgente(
     send_message: tool({
       ...AGENT_TOOL_DEFS.send_message,
       execute: async ({ body }) => {
+        if (
+          !agendaToolCalledThisTurn &&
+          agentConfig?.toolIds.includes('crm_find_free_slots') === true &&
+          pedidoDeDisponibilidadeAgenda(mensagemDoJob)
+        ) {
+          return {
+            ok: false,
+            error: {
+              code: 'agenda_disponibilidade_sem_consulta',
+              message:
+                'O cliente pediu disponibilidade da agenda. Consulte a agenda AGORA, antes de enviar qualquer resposta. ' +
+                'Se precisar descobrir o tipo de atendimento, chame crm_list_event_types e depois crm_find_free_slots NO MESMO TURNO. ' +
+                'Não pergunte qual dia, período ou data inicial quando isso não for necessário. Sem janela explícita, consulte os próximos 7 dias. ' +
+                'Se o cliente disser "próximos N dias", conte N dias a partir de hoje e mostre os horários reais.',
+            },
+          };
+        }
         if (claimsCurrentInboundIsEmpty(body, mensagemDoJob)) {
           falseEmptyInboundVetoCount += 1;
           if (falseEmptyInboundVetoCount < MAX_VETOS_DE_FALSO_VAZIO) {
