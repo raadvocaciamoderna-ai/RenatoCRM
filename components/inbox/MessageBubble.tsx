@@ -113,8 +113,10 @@ export function MessageBubble({
   return (
     <div
       className={cn(
-        "group flex w-full items-center gap-1 px-4 py-1",
-        isOutbound ? "justify-end" : "justify-start",
+        "group flex w-full items-center gap-1 py-1",
+        // Dá respiro real na borda externa: a mensagem enviada ficava visualmente
+        // colada à direita em telas largas. Mantém o lado do cliente simétrico.
+        isOutbound ? "justify-end pl-4 pr-6" : "justify-start pl-6 pr-4",
       )}
     >
       {/*
