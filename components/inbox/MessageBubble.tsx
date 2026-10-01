@@ -113,10 +113,11 @@ export function MessageBubble({
   return (
     <div
       className={cn(
-        "group flex w-full items-center gap-1 py-1",
-        // Dá respiro real na borda externa: a mensagem enviada ficava visualmente
-        // colada à direita em telas largas. Mantém o lado do cliente simétrico.
-        isOutbound ? "justify-end pl-4 pr-[clamp(4rem,10vw,12rem)]" : "justify-start pl-6 pr-4",
+        "group flex w-full items-center gap-1 py-1 px-4",
+        // Em telas muito largas, `padding-right` no wrapper não estava alterando
+        // de forma confiável a posição percebida da bolha. O recuo agora é aplicado
+        // diretamente na própria mensagem outbound via margin-right abaixo.
+        isOutbound ? "justify-end" : "justify-start",
       )}
     >
       {/*
@@ -162,6 +163,7 @@ export function MessageBubble({
         data-testid="message-bubble"
         className={cn(
           "max-w-[75%] text-sm",
+          isOutbound && "mr-[clamp(5rem,12vw,16rem)]",
           isBareSticker
             ? "px-0 py-0"
             : cn(
