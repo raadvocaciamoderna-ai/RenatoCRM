@@ -229,24 +229,54 @@ export async function drainEventLog(
     });
   }
 
-  const { data: rows, error } = await admin
-    .from("event_log")
-    // `created_at` viaja porque um consumidor não consegue distinguir "evento de
-    // agora" de "evento de três dias parado em `pending`" sem ele — e o drain
-    // leva 50 por tick sem janela de recência, então um backlog vira enxurrada
-    // de efeitos com data errada no primeiro tick depois de um deploy.
-    .select(
-      "id, organization_id, event_type, entity_kind, entity_id, payload, metadata, consumed_by, attempts, created_at",
-    )
-    .eq("status", "pending")
-    .or(`next_attempt_at.is.null,next_attempt_at.lte.${nowIso}`)
-    .in("event_type", handledTypes)
-    .order("created_at", { ascending: true })
-    .limit(limit);
+  // A consulta do event_log é feita pelo PostgREST. Em ambiente local/VPS,
+  // uma oscilação curta de rede pode chegar como `TypeError: fetch failed`
+  // sem que o banco esteja de fato indisponível. Não transformar um soluço
+  // transitório em erro vermelho no primeiro pacote: tenta até 3 vezes, com
+  // backoff curto. Erros de contrato/SQL não entram no retry.
+  let rows: Array<Record<string, unknown>> | null = null;
+  let selectError: { message: string } | null = null;
 
-  if (error) {
-    logger.error("[event-log.drain] select failed", { error: error.message });
+  for (let tentativa = 1; tentativa <= 3; tentativa++) {
+    try {
+      const resultado = await admin
+        .from("event_log")
+        // `created_at` viaja porque um consumidor não consegue distinguir "evento de
+        // agora" de "evento de três dias parado em `pending`" sem ele — e o drain
+        // leva 50 por tick sem janela de recência, então um backlog vira enxurrada
+        // de efeitos com data errada no primeiro tick depois de um deploy.
+        .select(
+          "id, organization_id, event_type, entity_kind, entity_id, payload, metadata, consumed_by, attempts, created_at",
+        )
+        .eq("status", "pending")
+        .or(`next_attempt_at.is.null,next_attempt_at.lte.${nowIso}`)
+        .in("event_type", handledTypes)
+        .order("created_at", { ascending: true })
+        .limit(limit);
 
+      rows = (resultado.data ?? null) as Array<Record<string, unknown>> | null;
+      selectError = resultado.error ? { message: resultado.error.message } : null;
+    } catch (err) {
+      selectError = { message: err instanceof Error ? err.message : String(err) };
+    }
+
+    if (!selectError) break;
+
+    const transitório =
+      /fetch failed|network|econnreset|etimedout|und_err|socket|connection/i.test(
+        selectError.message,
+      );
+    if (!transitório || tentativa === 3) break;
+
+    logger.warn("[event-log.drain] select transitório; tentando novamente", {
+      tentativa,
+      error: selectError.message,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 250 * tentativa));
+  }
+
+  if (selectError) {
+    logger.error("[event-log.drain] select failed", { error: selectError.message });
     return summary;
   }
 
