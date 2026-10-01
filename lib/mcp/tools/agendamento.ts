@@ -392,7 +392,11 @@ export const crmFindFreeSlots: McpToolDefinition<typeof horariosLivresShape> = {
   requiresScope: "mcp:read",
   handler: async (input, ctx) => {
     const agora = new Date();
-    // Disponibilidade deve usar o responsável padrão do tipo quando o modelo não tiver certeza.\n    // O owner_user_id inferido pelo LLM pode apontar para outra agenda e produzir falso "sem horários".\n    const ownerUserId = input.owner_user_id\n      ? await donoDaAgendaOuPadrao(ctx, input.owner_user_id)\n      : undefined;
+    // Disponibilidade deve usar o responsável padrão do tipo quando o modelo não tiver certeza.
+    // O owner_user_id inferido pelo LLM pode apontar para outra agenda e produzir falso "sem horários".
+    const ownerUserId = input.owner_user_id
+      ? await donoDaAgendaOuPadrao(ctx, input.owner_user_id)
+      : undefined;
     // O modelo frequentemente manda `dia` junto com `dias_a_frente` mesmo quando o cliente
     // escolheu uma data específica. A data explícita é mais específica: ela vence. Recusar os
     // dois campos fazia a IA interpretar `periodo_ambiguo` como "sem disponibilidade".
