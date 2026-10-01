@@ -377,7 +377,7 @@ export function InboxLayout({ initialSelectedId = null }: InboxLayoutProps = {})
   return (
     <OpenConversationProvider conversationId={selectedId}>
     <div
-      className="grid h-[calc(100dvh-3.5rem-var(--space-6)-max(var(--space-6),var(--rodape-ocupado,0px)))] w-full grid-cols-1 md:grid-cols-[300px_1fr] xl:grid-cols-[272px_1fr_296px] 2xl:grid-cols-[300px_1fr_320px]"
+      className="grid h-[calc(100dvh-3.5rem-var(--space-6)-max(var(--space-6),var(--rodape-ocupado,0px)))] w-full min-w-0 overflow-hidden grid-cols-1 md:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[272px_minmax(0,1fr)_296px] 2xl:grid-cols-[300px_minmax(0,1fr)_320px]"
       /*
        * O ESTADO DO TEMPO REAL, LEGÍVEL DE FORA — mesmo par que o dossiê do lead
        * já publica (`LeadDossier`), e pela mesma razão: quando a entrega morre,
@@ -447,7 +447,7 @@ export function InboxLayout({ initialSelectedId = null }: InboxLayoutProps = {})
       */}
       <div
         className={cn(
-          "renato-wallpaper h-full min-h-0 flex-col md:flex",
+          "renato-wallpaper h-full min-h-0 min-w-0 overflow-hidden flex-col md:flex",
           colunas.conversa,
         )}
       >
