@@ -1,13 +1,46 @@
-name: Deploy manual no EasyPanel (legado)
+name: Deploy automático no EasyPanel
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch: {}
 
 permissions:
   contents: read
 
+concurrency:
+  group: easypanel-production
+  cancel-in-progress: true
+
 jobs:
-  aviso:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Auto Deploy agora é gerenciado nativamente pelo EasyPanel."
+      - name: Verificar configuração do EasyPanel
+        id: easypanel
+        env:
+          EASYPANEL_DEPLOY_TRIGGER_URL: ${{ secrets.EASYPANEL_DEPLOY_TRIGGER_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${EASYPANEL_DEPLOY_TRIGGER_URL}" ]; then
+            echo "::warning::Secret EASYPANEL_DEPLOY_TRIGGER_URL ainda não configurado; deploy automático ignorado."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "configured=true" >> "$GITHUB_OUTPUT"
+
+      - name: Disparar implantação no EasyPanel
+        if: steps.easypanel.outputs.configured == 'true'
+        env:
+          EASYPANEL_DEPLOY_TRIGGER_URL: ${{ secrets.EASYPANEL_DEPLOY_TRIGGER_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error \
+            --request GET \
+            "${EASYPANEL_DEPLOY_TRIGGER_URL}"
+
+      - name: Registrar conclusão
+        if: steps.easypanel.outputs.configured == 'true'
+        run: echo "EasyPanel acionado imediatamente após push na main."
