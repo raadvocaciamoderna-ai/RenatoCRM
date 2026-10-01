@@ -383,7 +383,9 @@ export const crmFindFreeSlots: McpToolDefinition<typeof horariosLivresShape> = {
     "Se ele for false, o atendente ainda não publicou os horários dele — não invente horários e " +
     "não diga que está lotado; avise que alguém da equipe confirma. " +
     "Se `fuso_suposto` for true, o fuso da agenda não foi escolhido por ninguém, veio do padrão: " +
-    "ofereça o horário pedindo confirmação em vez de afirmar.",
+    "ofereça o horário pedindo confirmação em vez de afirmar. " +
+    "Se `publicou_horarios` for true, NUNCA diga que vai pedir para a equipe ajustar ou informar horários: " +
+    "a agenda está publicada e esta ferramenta é a fonte de verdade; consulte novamente quando necessário.",
   inputSchema: horariosLivresShape,
   category: "read",
   requiresRole: "agent",
