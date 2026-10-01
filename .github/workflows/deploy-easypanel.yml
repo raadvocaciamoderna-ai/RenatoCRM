@@ -38,6 +38,8 @@ jobs:
         run: |
           set -euo pipefail
           curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 \
+            --max-time 20 \
             --request GET \
             "${EASYPANEL_DEPLOY_TRIGGER_URL}"
 
