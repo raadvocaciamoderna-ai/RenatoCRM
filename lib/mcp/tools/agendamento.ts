@@ -389,13 +389,11 @@ export const crmFindFreeSlots: McpToolDefinition<typeof horariosLivresShape> = {
   handler: async (input, ctx) => {
     const agora = new Date();
     const ownerUserId = await donoDaAgendaOuPadrao(ctx, input.owner_user_id);
-    if (input.dia !== undefined && input.dias_a_frente !== undefined) {
-      return {
-        horarios: [],
-        motivo: "periodo_ambiguo",
-        mensagem: "informe um dia específico ou quantos dias olhar, não os dois.",
-      };
-    }
+    // O modelo frequentemente manda `dia` junto com `dias_a_frente` mesmo quando o cliente
+    // escolheu uma data específica. A data explícita é mais específica: ela vence. Recusar os
+    // dois campos fazia a IA interpretar `periodo_ambiguo` como "sem disponibilidade".
+    // Sanitizamos na borda para que a consulta realmente aconteça.
+    const diasAFrenteEfetivo = input.dia !== undefined ? undefined : input.dias_a_frente;
 
     // A faixa larga contém o dia civil em QUALQUER fuso. Depois de a coleta
     // revelar o fuso da regra, filtramos pelo mesmo dia local. Assim a IA não
@@ -410,7 +408,7 @@ export const crmFindFreeSlots: McpToolDefinition<typeof horariosLivresShape> = {
     const de = janela === null ? agora : janela.de;
     const ate =
       janela === null
-        ? new Date(de.getTime() + (input.dias_a_frente ?? DIAS_PADRAO) * 86_400_000)
+        ? new Date(de.getTime() + (diasAFrenteEfetivo ?? DIAS_PADRAO) * 86_400_000)
         : janela.ate;
 
     const consulta = await horariosLivresDaOrg(ctx.supabase, ctx.organizationId, {
