@@ -373,8 +373,10 @@ export const crmFindFreeSlots: McpToolDefinition<typeof horariosLivresShape> = {
     "agrupadas por dia, no formato `Dia da semana — DD/MM` e, nas linhas seguintes, cada horário em `HH:MM`. " +
     "Termine com `Qual horário prefere?`. Não ofereça uma lista de datas para o cliente escolher antes de mostrar " +
     "os horários e não pergunte `qual dia?` quando já é possível consultar a agenda. " +
-    "Se o cliente pedir um dia específico e esse dia não tiver horários, consulte as próximas disponibilidades " +
-    "e mostre diretamente até 3 próximas datas COM horários reais, no mesmo formato; não ofereça datas vazias. " +
+    "Se o cliente pedir um dia específico e esse dia não tiver horários, faça uma NOVA chamada desta ferramenta " +
+    "sem `dia` e com `dias_a_frente: 7` para buscar horários FUTUROS a partir de agora. Mostre diretamente até " +
+    "3 próximas datas COM horários reais, no mesmo formato. NUNCA ofereça datas anteriores ao dia pedido, nunca " +
+    "liste datas sem horários e nunca invente alternativas sem o resultado dessa segunda consulta. " +
     "Para uma data que o cliente nomeou, use `dia` em YYYY-MM-DD; o servidor aplica o fuso da agenda. " +
     "NUNCA monte um intervalo UTC por conta própria. " +
     "Lista vazia NÃO é erro e NÃO significa que a agenda está cheia: leia `publicou_horarios`. " +
