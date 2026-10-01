@@ -116,7 +116,7 @@ export function MessageBubble({
         "group flex w-full items-center gap-1 py-1",
         // Dá respiro real na borda externa: a mensagem enviada ficava visualmente
         // colada à direita em telas largas. Mantém o lado do cliente simétrico.
-        isOutbound ? "justify-end pl-4 pr-16" : "justify-start pl-6 pr-4",
+        isOutbound ? "justify-end pl-4 pr-[clamp(4rem,10vw,12rem)]" : "justify-start pl-6 pr-4",
       )}
     >
       {/*
