@@ -365,7 +365,10 @@ export const crmFindFreeSlots: McpToolDefinition<typeof horariosLivresShape> = {
     "fala com a pessoa. " +
     "A lista vem cortada no `limite` e espalhada ao longo do período: `total_de_horarios` diz quantos " +
     "existem e `ha_mais` avisa que sobraram — lista cortada NÃO é agenda cheia. " +
-    "QUANDO: informe `dias_a_frente` (a partir de agora — ex.: 7 para a próxima semana). " +
+    "QUANDO: se o cliente só perguntar quais dias/horários estão disponíveis, SEM indicar uma data, " +
+    "NÃO pergunte qual dia ele quer: chame a ferramenta sem `dia` e sem `dias_a_frente`; ela consulta " +
+    `automaticamente os próximos ${DIAS_PADRAO} dias a partir de agora. ` +
+    "Use `dias_a_frente` apenas quando o cliente pedir um horizonte relativo específico (ex.: próxima semana). " +
     "Para uma data que o cliente nomeou, use `dia` em YYYY-MM-DD; o servidor aplica o fuso da agenda. " +
     "NUNCA monte um intervalo UTC por conta própria. " +
     "Lista vazia NÃO é erro e NÃO significa que a agenda está cheia: leia `publicou_horarios`. " +
