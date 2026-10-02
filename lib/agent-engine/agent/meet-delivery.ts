@@ -121,6 +121,11 @@ export function createMeetDeliveryHandler(deps: {
           optedOutThisTurn: false,
           now: new Date(),
           lgpd: deriveLgpdFromContact(row, false),
+          // Esta mensagem é transacional e determinística: confirma um agendamento
+          // real já criado no Google. O anti-repetição serve para campanhas/cópias
+          // de IA e não pode bloquear confirmações legítimas de agenda só porque
+          // vários clientes recebem o mesmo molde.
+          enforceSpinning: false,
           ...(deps.sleep ? { sleep: deps.sleep } : {}),
           send: async (body) => {
             await assertMeetingDeliveryPg(pool, context);
