@@ -65,9 +65,11 @@ export function createMeetDeliveryHandler(deps: {
             archived_at: string | null;
             contact_locale: string | null;
             organization_locale: string;
+            contact_name: string | null;
+            contact_display_name: string | null;
           }
         >(
-          `select a.meeting_url,a.location_kind,a.starts_at,a.time_zone,c.source,c.consent,c.is_anonymized,c.locale as contact_locale,o.locale as organization_locale,v.channel_session_id,s.daily_message_limit,to_jsonb(s)->>'archived_at' as archived_at
+          `select a.meeting_url,a.location_kind,a.starts_at,a.time_zone,c.source,c.consent,c.is_anonymized,c.locale as contact_locale,c.name as contact_name,c.display_name as contact_display_name,o.locale as organization_locale,v.channel_session_id,s.daily_message_limit,to_jsonb(s)->>'archived_at' as archived_at
            from calendar_appointments a join contacts c on c.organization_id=a.organization_id and c.id=a.contact_id
            join organizations o on o.id=a.organization_id
            join conversations v on v.organization_id=a.organization_id and v.contact_id=c.id and v.id=$3
@@ -117,6 +119,7 @@ export function createMeetDeliveryHandler(deps: {
             // Sem Meet não há link, e o texto não inventa um.
             url: ehMeet ? url : null,
             idioma: normalizarIdioma(row.contact_locale ?? row.organization_locale),
+            nome: row.contact_name ?? row.contact_display_name,
           }),
           optedOutThisTurn: false,
           now: new Date(),
