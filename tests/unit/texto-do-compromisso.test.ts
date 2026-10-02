@@ -17,7 +17,22 @@ describe("o texto do compromisso", () => {
     expect(texto).not.toMatch(/link/i);
     expect(texto).not.toMatch(/meet/i);
     expect(texto).toMatch(/compromisso/i);
-    expect(texto).toContain("America/Sao_Paulo");
+    expect(texto).toMatch(/dia \d{2}\/\d{2}\/\d{4}, às \d{2}:\d{2}/);
+  });
+
+  it("personaliza a confirmação em português e deixa o Meet separado", () => {
+    const url = "https://meet.google.com/abc-defg-hij";
+    const texto = textoDoCompromisso({
+      startsAt: "2026-10-05T13:00:00.000Z",
+      timeZone: "America/Sao_Paulo",
+      url,
+      idioma: "pt-BR",
+      nome: "Renato Almeida",
+    });
+    expect(texto).toContain("Olá, Renato! Tudo bem?");
+    expect(texto).toContain("esta segunda-feira, dia 05/10/2026, às 10:00");
+    expect(texto).toContain(`horário combinado:\n${url}\n\nTe aguardo lá!`);
+    expect(texto).not.toContain("America/Sao_Paulo");
   });
 
   it("⛔ CONTROLE: COM link, o link continua saindo", () => {
