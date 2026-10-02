@@ -51,11 +51,7 @@ export async function bloquearNovoLinkSeJaAgendado(
   const compromisso = rows[0];
   if (!compromisso) return null;
 
-  const quando = new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-    timeZone: compromisso.time_zone,
-  }).format(new Date(compromisso.starts_at));
+  const quando = `${compromisso.starts_at} (${compromisso.time_zone})`;
 
   const meet =
     compromisso.meeting_url?.trim()
@@ -65,8 +61,7 @@ export async function bloquearNovoLinkSeJaAgendado(
   return {
     code: "agenda_ja_existente",
     message:
-      `Este contato já possui um agendamento futuro ativo para ${quando} ` +
-      `(${compromisso.time_zone}). NÃO envie outro link de agendamento.` +
+      `Este contato já possui um agendamento futuro ativo em ${quando}. NÃO envie outro link de agendamento.` +
       meet +
       " Se a pessoa só pediu para lembrar data, horário ou link da reunião, responda com os dados deste compromisso. " +
       "Se ela quer outro horário, pergunte se deseja manter, remarcar ou cancelar. Só envie um novo link depois que o compromisso atual tiver sido efetivamente cancelado/remarcado pelo fluxo de agenda.",
