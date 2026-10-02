@@ -45,8 +45,9 @@ function baseCtx(overrides: Partial<GateContext> = {}): GateContext {
   };
 }
 
-/** As quatro ferramentas de agenda — o agente que tem todas. */
+/** As cinco ferramentas de agenda — o agente que tem todas. */
 const TODAS = [
+  "crm_list_appointments",
   "crm_find_free_slots",
   "crm_book_appointment",
   "crm_reschedule_appointment",
@@ -263,8 +264,9 @@ describe("fiação do gate — a EXECUÇÃO da ferramenta de agenda arma o sinal
     expect(corpo).toMatch(/toolCalledThisTurn:\s*agendaToolCalledThisTurn/);
   });
 
-  it("as três tools de agenda são marcadas na montagem — não só crm_book_appointment", () => {
+  it("as tools de agenda, inclusive a consulta de compromissos, são marcadas na montagem", () => {
     expect(FONTE_INBOUND).toMatch(/AGENDA_TOOL_NAMES = new Set\(\[/);
+    expect(FONTE_INBOUND).toContain("'crm_list_appointments'");
     expect(FONTE_INBOUND).toContain("'crm_find_free_slots'");
     expect(FONTE_INBOUND).toContain("'crm_book_appointment'");
     expect(FONTE_INBOUND).toContain("'crm_reschedule_appointment'");
