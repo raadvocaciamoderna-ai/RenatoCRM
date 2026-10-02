@@ -37,8 +37,8 @@ describe("proteção contra segundo link de agendamento", () => {
     });
 
     expect(r?.code).toBe("agenda_ja_existente");
-    expect(r?.message).toContain("05/10/2026");
-    expect(r?.message).toContain("10:00");
+    expect(r?.message).toContain("2026-10-05T13:00:00.000Z");
+    expect(r?.message).toContain("America/Sao_Paulo");
     expect(r?.message).toContain("https://meet.google.com/abc-defg-hij");
     expect(r?.message).toMatch(/manter, remarcar ou cancelar/i);
     expect(r?.message).toMatch(/NÃO envie outro link/i);
