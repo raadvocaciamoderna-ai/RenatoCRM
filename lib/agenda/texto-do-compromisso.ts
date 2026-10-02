@@ -33,6 +33,7 @@ export function textoDoCompromisso({
   timeZone,
   url,
   idioma,
+  nome,
 }: {
   /** Ausente = primeiro envio, que é o comportamento de quem não declara nada. */
   motivo?: MotivoDaEntrega;
@@ -41,12 +42,42 @@ export function textoDoCompromisso({
   /** `null` = compromisso sem reunião online (presencial, telefone). */
   url: string | null;
   idioma: Idioma;
+  /** Nome exibido ao cliente; no WhatsApp usamos só o primeiro nome. */
+  nome?: string | null;
 }): string {
+  const data = new Date(startsAt);
   const quando = new Intl.DateTimeFormat(tagDeIdioma(idioma), {
     dateStyle: "short",
     timeStyle: "short",
     timeZone,
-  }).format(new Date(startsAt));
+  }).format(data);
+
+  if (idioma === "pt-BR" && motivo === "primeiro_envio") {
+    const primeiroNome = nome?.trim().split(/\s+/)[0]?.replace(/[,;:]+$/g, "") || null;
+    const saudacao = primeiroNome ? `Olá, ${primeiroNome}! Tudo bem?` : "Olá! Tudo bem?";
+    const diaDaSemana = new Intl.DateTimeFormat("pt-BR", {
+      weekday: "long",
+      timeZone,
+    }).format(data);
+    const dia = new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      timeZone,
+    }).format(data);
+    const hora = new Intl.DateTimeFormat("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone,
+    }).format(data);
+
+    if (url) {
+      return `${saudacao}\n\nPassando para confirmar que a nossa reunião está marcada para esta ${diaDaSemana}, dia ${dia}, às ${hora}.\n\nPara participar, basta acessar o link do Google Meet no horário combinado:\n${url}\n\nTe aguardo lá!`;
+    }
+
+    return `${saudacao}\n\nPassando para confirmar que o nosso compromisso está marcado para esta ${diaDaSemana}, dia ${dia}, às ${hora}.\n\nTe aguardo lá!`;
+  }
 
   const abertura =
     motivo === "remarcado"
