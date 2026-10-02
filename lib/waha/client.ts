@@ -505,7 +505,13 @@ export class WahaClient {
           "X-Api-Key": this.apiKey,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ session, chatId, text, ...(replyTo ? { reply_to: replyTo } : {}) }),
+        body: JSON.stringify({
+          session,
+          chatId,
+          text,
+          linkPreview: false,
+          ...(replyTo ? { reply_to: replyTo } : {}),
+        }),
       });
 
     let res = await enviar();
