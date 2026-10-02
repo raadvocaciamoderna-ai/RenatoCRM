@@ -56,6 +56,6 @@ export function textoDoCompromisso({
       : url
         ? traduzir("Sua reunião está marcada para", idioma)
         : traduzir("Seu compromisso está marcado para", idioma);
-  const link = url ? ` ${traduzir("Link do Google Meet:", idioma)} ${url}` : "";
+  const link = url ? `\n\n${traduzir("Link do Google Meet:", idioma)}\n${url}` : "";
   return `${abertura} ${quando} (${timeZone}).${link}`;
 }
