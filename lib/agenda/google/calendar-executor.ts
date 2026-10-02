@@ -120,6 +120,28 @@ export async function syncCalendar(
                 original_start_time: event.originalStartTime,
               },
       });
+      if (read.tipo === "evento") {
+        const cliente = (event.attendees ?? []).find((p) => p && p.self !== true && !p.organizer);
+        await googleRpc(db, "fn_google_external_event_details", {
+          p_org: org,
+          p_connection: c.connection_id,
+          p_calendar: c.external_calendar_id,
+          p_event: read.evento.external_event_id,
+          p_details: {
+            title: event.summary ?? null,
+            description: event.description ?? null,
+            location: event.location ?? null,
+            meeting_url: event.hangoutLink ?? null,
+            organizer_email: event.organizer?.email ?? null,
+            attendee_name: cliente?.displayName ?? null,
+            attendee_email: cliente?.email ?? null,
+            attendees: event.attendees ?? [],
+            conference_data: event.conferenceData ?? null,
+            external_updated_at: event.updated ?? null,
+            ical_uid: event.iCalUID ?? null,
+          },
+        });
+      }
     }
     const saved = calendarSnapshotSchema.parse(
       await call("page", {
