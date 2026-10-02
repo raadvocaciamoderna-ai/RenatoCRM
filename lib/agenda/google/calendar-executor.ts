@@ -79,14 +79,14 @@ export async function syncCalendar(
       const event = rawEvent as EventoDoGoogle;
       const { data: linked, error } = await db
         .from("calendar_appointments")
-        .select("id")
+        .select("id,source")
         .eq("organization_id", org)
         .eq("google_connection_id", c.connection_id)
         .eq("google_calendar_id", c.external_calendar_id)
         .eq("google_event_id", event.id!)
         .maybeSingle();
       if (error) throw error;
-      if (linked) {
+      if (linked && linked.source !== "google_sync") {
         const result = await reconcileAppointment(db, org, linked.id, {
           transport,
           calendarFence: fence,
