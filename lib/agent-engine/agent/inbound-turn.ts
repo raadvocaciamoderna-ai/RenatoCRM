@@ -79,6 +79,7 @@ import {
 } from './lead-state';
 import { applySaveLeadNote, buildNotesIndexBlock, getLeadNoteBody } from './lead-notes';
 import { buildCompromissosBlock } from './compromissos-do-contato';
+import { bloquearNovoLinkSeJaAgendado } from './bloqueio-novo-link-agendamento';
 import { applyScheduleFollowup, type FollowupWindowKnobs } from './schedule-followup';
 import {
   avisarLeadDaEscalacao,
@@ -2875,6 +2876,28 @@ async function executarTurnoDoAgente(
                 'NÃO envie mais nada agora — encerre o turno e espere a resposta do lead.',
             },
           };
+        }
+        // O link público do Google é a porta para CRIAR outra reserva. Antes de
+        // deixá-lo sair, confira a fonte de verdade: se este mesmo contato já tem
+        // compromisso futuro vivo, a IA precisa conversar sobre o que já existe
+        // (lembrar data/horário/Meet, manter, remarcar ou cancelar), nunca abrir
+        // espaço para dez reservas paralelas.
+        if (!preview) {
+          const bloqueioDeAgenda = await bloquearNovoLinkSeJaAgendado(pool, {
+            organizationId: tenantId,
+            contactId: leadId,
+            body,
+            now: clock(),
+          });
+          if (bloqueioDeAgenda !== null) {
+            return {
+              ok: false,
+              error: {
+                code: bloqueioDeAgenda.code,
+                message: bloqueioDeAgenda.message,
+              },
+            };
+          }
         }
         // F4-04: sinaliza (independente do gate F4-01/F4-08) se ESTA candidata é uma
         // promessa fora de tabela — usado só para correlacionar com o jailbreak no fim do
