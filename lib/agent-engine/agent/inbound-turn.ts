@@ -1029,6 +1029,12 @@ export function blocosDeAgendaResidentes(toolIds: readonly string[]): string[] {
  * ver o wrap no loop de montagem das tools MCP, mais abaixo.
  */
 const AGENDA_TOOL_NAMES = new Set([
+  // Consultar compromissos já marcados também é uma CHECAGEM real de agenda.
+  // Isso importa para agentes que só administram compromissos existentes
+  // (consultar/cancelar/remarcar): se o cliente pergunta "que dia ficou?",
+  // crm_list_appointments deve satisfazer o gate antes de a IA afirmar a data,
+  // sem obrigá-la a chamar uma ferramenta de remarcação que mudaria o compromisso.
+  'crm_list_appointments',
   'crm_find_free_slots',
   'crm_book_appointment',
   'crm_reschedule_appointment',
