@@ -137,6 +137,37 @@ describe("socket que aceita e não responde — a chamada desiste, não pendura"
   });
 });
 
+
+describe("sendText sem cartão de preview", () => {
+  it("envia linkPreview=false para deixar só a mensagem e o link", async () => {
+    let recebido: Record<string, unknown> | null = null;
+    const srv = createServer(async (req, res) => {
+      const chunks: Buffer[] = [];
+      for await (const chunk of req) chunks.push(Buffer.from(chunk));
+      recebido = JSON.parse(Buffer.concat(chunks).toString("utf8")) as Record<string, unknown>;
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ id: "ok" }));
+    });
+    await new Promise<void>((r) => srv.listen(0, "127.0.0.1", r));
+    const url = `http://127.0.0.1:${(srv.address() as AddressInfo).port}`;
+    try {
+      const cliente = new WahaClient(url, "chave-de-teste", { tetoMs: 3_000 });
+      await cliente.sendMessage(
+        "sessao",
+        "5511999@c.us",
+        "Agende aqui: https://calendar.app.google/exemplo",
+      );
+      expect(recebido).toMatchObject({
+        session: "sessao",
+        chatId: "5511999@c.us",
+        linkPreview: false,
+      });
+    } finally {
+      await new Promise<void>((r) => srv.close(() => r()));
+    }
+  });
+});
+
 describe("a superfície inteira — nenhum fetch fica de fora", () => {
   it("⭐ nenhum `fetch(` cru sobrou em lib/waha/client.ts", async () => {
     const { readFileSync } = await import("node:fs");
