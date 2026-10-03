@@ -373,6 +373,71 @@ describe("as escritas de agenda", () => {
   });
 });
 
+
+describe("agenda escopada ao contato da conversa", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  function clientComContatoDoCompromisso(contactId: string | null): SupabaseClient {
+    const maybeSingle = vi.fn().mockResolvedValue({ data: { contact_id: contactId }, error: null });
+    const segundoEq = vi.fn().mockReturnValue({ maybeSingle });
+    const primeiroEq = vi.fn().mockReturnValue({ eq: segundoEq });
+    const select = vi.fn().mockReturnValue({ eq: primeiroEq });
+    const from = vi.fn().mockReturnValue({ select });
+    return { from } as unknown as SupabaseClient;
+  }
+
+  const meetingBooking = {
+    sourceJobId: "job-1",
+    claim: { worker_id: "worker-1", acquired_at: "2026-10-02 23:00:00.000000+00" },
+    boundary: {
+      organization_id: "org-1",
+      contact_id: "11111111-1111-4111-8111-111111111111",
+      conversation_id: "22222222-2222-4222-8222-222222222222",
+      service_revision: 1,
+      demanda_id: null,
+      demanda_revision: null,
+    },
+  };
+
+  it("lista ignora ids errados do modelo e usa o contato da fronteira", async () => {
+    vi.mocked(listaAgendamentos).mockResolvedValue({ ok: true, agendamentos: [] });
+    await crmListAppointments.handler(
+      {
+        contact_id: "33333333-3333-4333-8333-333333333333",
+        lead_id: "44444444-4444-4444-8444-444444444444",
+        owner_user_id: "55555555-5555-4555-8555-555555555555",
+        dia: "2026-10-05",
+      },
+      { ...ctx, meetingBooking },
+    );
+    const params = vi.mocked(listaAgendamentos).mock.calls[0]![2];
+    expect(params.contactId).toBe(meetingBooking.boundary.contact_id);
+    expect(params.leadId).toBeNull();
+    expect(params.ownerUserId).toBeNull();
+  });
+
+  it("cancelamento recusa compromisso de outro contato antes de tocar o handler", async () => {
+    const scoped = { ...ctx, meetingBooking, supabase: clientComContatoDoCompromisso("99999999-9999-4999-8999-999999999999") };
+    const result = (await crmCancelAppointment.handler(
+      { appointment_id: "66666666-6666-4666-8666-666666666666", reason: "cliente pediu" },
+      scoped,
+    )) as { cancelado: boolean; motivo: string };
+    expect(result.cancelado).toBe(false);
+    expect(result.motivo).toBe("agenda_fora_do_contato");
+    expect(handlers.cancelarAgendamentoHandler).not.toHaveBeenCalled();
+  });
+
+  it("remarcação recusa compromisso de outro contato antes de tocar o handler", async () => {
+    const scoped = { ...ctx, meetingBooking, supabase: clientComContatoDoCompromisso("99999999-9999-4999-8999-999999999999") };
+    const result = (await crmRescheduleAppointment.handler(
+      { appointment_id: "77777777-7777-4777-8777-777777777777", new_starts_at: "2026-10-08T13:00:00Z" },
+      scoped,
+    )) as { remarcado: boolean; motivo: string };
+    expect(result.remarcado).toBe(false);
+    expect(result.motivo).toBe("agenda_fora_do_contato");
+    expect(handlers.alterarAgendamentoHandler).not.toHaveBeenCalled();
+  });
+});
 describe('Meet no contrato do atendimento',()=>{
  it('booking pendente transporta contexto interno e não promete link pronto/enviado',async()=>{
   vi.mocked(idDoTipoPorSlug).mockResolvedValue({id:'tipo'} as never);

@@ -80,6 +80,24 @@ export const operatorTurnPayloadSchema = z
  * da spec 16 em duas frases. Lá, vocabulário de sistema é o defeito (30% de
  * vazamento medido); aqui, é o vocabulário de trabalho.
  */
+const FERRAMENTAS_DE_AGENDA_QUE_EXIGEM_PEDIDO_CONVERSACIONAL = new Set([
+  'crm_book_appointment',
+  'crm_find_and_book_appointment',
+  'crm_reschedule_appointment',
+  'crm_cancel_appointment',
+  'crm_confirm_appointment',
+  'crm_set_appointment_outcome',
+]);
+
+/**
+ * O Operador trabalha em segundo plano a partir de uma declaração resumida do
+ * turno. Ele não pode criar, mover, confirmar ou cancelar compromisso de
+ * cliente: essas ações exigem o pedido explícito na conversa e o contato atual
+ * disponível na fronteira do turno conversacional.
+ */
+export function ferramentasSegurasDoOperador(ids: readonly string[]): string[] {
+  return ids.filter((id) => !FERRAMENTAS_DE_AGENDA_QUE_EXIGEM_PEDIDO_CONVERSACIONAL.has(id));
+}
 export const SYSTEM_DO_OPERADOR =
   'Você é o operador do sistema. Seu trabalho é deixar o CRM refletindo o que aconteceu na ' +
   'conversa que acabou de ocorrer — mover o lead, registrar, abrir o que precisa ser aberto.\n\n' +
@@ -378,6 +396,7 @@ export function createOperatorTurnHandler(deps: InboundTurnDeps) {
         versionId: agentConfig.versionId,
         revision: agentConfig.operationRevision,
       });
+    const ferramentasDoOperador = ferramentasSegurasDoOperador(agentConfig.operatorToolIds);
     const decisao = decidirSeRoda({ papelLigado: agentConfig.operatorEnabled, declaracao });
 
     if (!decisao.roda) {
@@ -398,7 +417,7 @@ export function createOperatorTurnHandler(deps: InboundTurnDeps) {
           dono: await apurarComRetorno(pool, tenantId, leadId, promessas.length, {
             ferramentasChamadas: [],
             operadorRodou: false,
-            operadorTemFerramentas: agentConfig.operatorToolIds.length > 0,
+            operadorTemFerramentas: ferramentasDoOperador.length > 0,
           }),
           ferramentasChamadas: [],
           houveCheckpoint,
@@ -416,7 +435,7 @@ export function createOperatorTurnHandler(deps: InboundTurnDeps) {
     // registra a promessa em aberto. Chamar o modelo para descobrir que ele não
     // tem mão nenhuma seria gastar a chave do self-hoster para nada.
     let mcp: Awaited<ReturnType<typeof buildMcpTurnTools>> = null;
-    if (agentConfig.operatorToolIds.length > 0) {
+    if (ferramentasDoOperador.length > 0) {
       try {
         mcp = await buildMcpTurnTools(
           deps.crmCfg,
@@ -425,7 +444,7 @@ export function createOperatorTurnHandler(deps: InboundTurnDeps) {
           // `operatorToolIds`. A troca acontece AQUI, num ponto só, para que
           // nenhum caminho do Operador alcance a lista do Conversador por
           // engano — que seria dar a ele a mão do outro.
-          { ...agentConfig, toolIds: agentConfig.operatorToolIds },
+          { ...agentConfig, toolIds: ferramentasDoOperador },
           log,
         );
       } catch (err) {
@@ -520,7 +539,7 @@ export function createOperatorTurnHandler(deps: InboundTurnDeps) {
         dono: await apurarComRetorno(pool, tenantId, leadId, promessas.length, {
           ferramentasChamadas,
           operadorRodou: true,
-          operadorTemFerramentas: agentConfig.operatorToolIds.length > 0,
+          operadorTemFerramentas: ferramentasDoOperador.length > 0,
         }),
         ferramentasChamadas,
         houveCheckpoint,

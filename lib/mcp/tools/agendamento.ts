@@ -505,11 +505,16 @@ export const crmListAppointments: McpToolDefinition<typeof listarShape> = {
   requiresRole: "agent",
   requiresScope: "mcp:read",
   handler: async (input, ctx) => {
+    // Dentro de um turno de conversa, a fronteira do serviço é a fonte confiável
+    // de quem está sendo atendido. Quando ela existe, a leitura fica
+    // obrigatoriamente no contato da conversa; ids digitados pelo modelo não
+    // podem alargar a consulta para outra pessoa ou outro atendente.
+    const contatoDaConversa = ctx.meetingBooking?.boundary.contact_id ?? null;
     const r = await listaAgendamentos(ctx.supabase, ctx.organizationId, {
-      contactId: input.contact_id ?? null,
-      leadId: input.lead_id ?? null,
+      contactId: contatoDaConversa ?? input.contact_id ?? null,
+      leadId: contatoDaConversa ? null : input.lead_id ?? null,
       dia: input.dia ?? null,
-      ownerUserId: input.owner_user_id ?? null,
+      ownerUserId: contatoDaConversa ? null : input.owner_user_id ?? null,
       situacao: input.situacao ?? null,
       limite: input.limite ?? 20,
     });
@@ -589,6 +594,40 @@ async function semDerrubarOTurno<T>(
         "não consegui completar agora. Avise que alguém da equipe confirma o horário.",
     };
   }
+}
+
+/**
+ * Escritas de agenda feitas durante uma conversa só podem tocar compromissos do
+ * contato daquela própria fronteira de atendimento. O token MCP é service-role:
+ * sem esta guarda, um UUID de compromisso errado ainda poderia apontar para
+ * outra pessoa da mesma organização.
+ */
+async function compromissoPertenceAoContatoDoTurno(
+  ctx: McpContext,
+  appointmentId: string,
+): Promise<boolean> {
+  const contatoDaConversa = ctx.meetingBooking?.boundary.contact_id;
+  if (!contatoDaConversa) return true;
+
+  const { data, error } = await ctx.supabase
+    .from("calendar_appointments")
+    .select("contact_id")
+    .eq("organization_id", ctx.organizationId)
+    .eq("id", appointmentId)
+    .maybeSingle();
+
+  if (error || !data) return false;
+  return (data as { contact_id?: string | null }).contact_id === contatoDaConversa;
+}
+
+function recusaForaDoContato(chave: "cancelado" | "remarcado") {
+  return {
+    [chave]: false,
+    motivo: "agenda_fora_do_contato",
+    mensagem:
+      "esse compromisso não pertence à pessoa desta conversa. Consulte crm_list_appointments " +
+      "e use somente um compromisso retornado para este contato.",
+  };
 }
 
 const marcarShape = {
@@ -998,6 +1037,9 @@ export const crmRescheduleAppointment: McpToolDefinition<typeof remarcarShape> =
   requiresScope: "mcp:write",
   handler: async (input, ctx) =>
     semDerrubarOTurno("remarcado", async () => {
+      if (!(await compromissoPertenceAoContatoDoTurno(ctx, input.appointment_id))) {
+        return recusaForaDoContato("remarcado");
+      }
       const r = await alterarAgendamentoHandler(
         ctx.supabase,
         { organization_id: ctx.organizationId, actor: ctx.actor, requestId: ctx.requestId },
@@ -1037,6 +1079,9 @@ export const crmCancelAppointment: McpToolDefinition<typeof cancelarShape> = {
   requiresScope: "mcp:write",
   handler: async (input, ctx) =>
     semDerrubarOTurno("cancelado", async () => {
+      if (!(await compromissoPertenceAoContatoDoTurno(ctx, input.appointment_id))) {
+        return recusaForaDoContato("cancelado");
+      }
       const r = await cancelarAgendamentoHandler(
         ctx.supabase,
         { organization_id: ctx.organizationId, actor: ctx.actor, requestId: ctx.requestId },
